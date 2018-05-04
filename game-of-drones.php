@@ -29,14 +29,13 @@ while (true) {
             $distances[$playerDrone->getId()] = $distance;
         }
 
-        $dronesRequired = ($npcDronesInRange - $playerDronesInRange) + 1;
+        $dronesRequired = ($npcDronesInRange - $playerDronesInRange) + ($zone->getId() !== $gameState->getPlayerID());
 
         if ($dronesRequired > $unassignedDrones) {
             continue;
         }
 
         asort($distances);
-        reset($distances);
 
         foreach (array_keys($distances) as $playerDroneId) {
             if ($playerDrones[$playerDroneId]->getAssignment()->getId() >= 0) {
