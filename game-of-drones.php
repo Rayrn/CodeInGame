@@ -6,11 +6,36 @@ $gameState = new GameState();
 while (true) {
     $gameState->update();
 
-    for ($i = 0; $i < $gameState->getDroneAllocation(); $i++) {
-        // Write an action using echo(). DON'T FORGET THE TRAILING \n
-        // output a destination point to be reached by one of your drones. The first line corresponds to the first of your drones that you were provided as input, the next to the second, etc.
-        echo("20 20\n");
+    $playerDrones = $gameState->getPlayerDrones();
+    $npcDrones = $gameState->getNPCDrones();
+    $zones = $gameState->getZones();
+
+
+
+    foreach ($playerDrones as $drone) {
+        $distances = [];
+        $zones = $gameState->getZones();
+
+        foreach ($zones as $zone) {
+            if ($zone->getOwner() == $gameState->getPlayerID()) {
+                continue;
+            }
+
+            $distances[$zone->getId()] = $drone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
+        }
+
+        asort($distances);
+        reset($distances);
+
+        echo $zones[key($distances)]->getX() . " " . $zones[key($distances)]->getY() . "\n";
     }
+}
+
+/**
+ * To debug (equivalent to var_dump): `error_log(var_export($var, true));`
+ */
+function debug($var) {
+    error_log(var_export($var, true));
 }
 
 class GameState
@@ -46,18 +71,15 @@ class GameState
      */
     private $zones;
 
-    /**
-     * @var array Collection of Zone objects
-     */
-    private $debug;
-
     public function __construct()
     {
         fscanf(STDIN, "%d %d %d %d", $this->playerCount, $this->playerId, $this->droneAllocation, $this->zoneCount);
 
         $this->zones = [];
         for ($z = 0; $z < $this->zoneCount; $z++) {
-            $this->zones[$z] = new Zone($z);
+            fscanf(STDIN, "%d %d", $x, $y);
+
+            $this->zones[$z] = new Zone($z, -1, $x, $y);
         }
 
         $this->drones = [];
@@ -78,7 +100,7 @@ class GameState
 
         for ($p = 0; $p < $this->playerCount; $p++) {
             for ($d = 0; $d < $this->droneAllocation; $d++) {
-                fscanf(STDIN,"%d %d", $x, $y);
+                fscanf(STDIN, "%d %d", $x, $y);
                 $this->drones[$p][$d]->setX($x);
                 $this->drones[$p][$d]->setY($y);
             }
@@ -105,17 +127,28 @@ class GameState
         return $this->zoneCount;
     }
 
-    public function getZones() : int
+    public function getZones() : array
     {
-        return $this->zoneCount;
+        return $this->zones;
     }
 
-    /**
-     * To debug (equivalent to var_dump): `error_log(var_export($var, true));`
-     */
-    public function debug()
+    public function getAllDrones() : array
     {
-        error_log(var_export($this, true));
+        return $this->drones;
+    }
+
+    public function getPlayerDrones() : array
+    {
+        return $this->drones[$this->playerId];
+    }
+
+    public function getNPCDrones() : array
+    {
+        $drones = $this->drones;
+
+        unset($drones[$this->playerId]);
+
+        return $drones;
     }
 }
 
@@ -141,12 +174,12 @@ class Zone
      */
     private $y;
 
-    public function __construct($id)
+    public function __construct(int $id = -1, int $o = -1, int $x = -1, int $y = -1)
     {
         $this->id = $id;
-        $this->owner = -1;
-
-        fscanf(STDIN, "%d %d", $this->x, $this->y);
+        $this->owner = $o;
+        $this->x = $x;
+        $this->y = $y;
     }
 
     public function getId() : int
@@ -156,7 +189,7 @@ class Zone
 
     public function getOwner() : int
     {
-        $this->owner = $owner;
+        return $this->owner;
     }
 
     public function setOwner(int $owner)
@@ -172,6 +205,25 @@ class Zone
     public function getY() : int
     {
         return $this->y;
+    }
+
+    /**
+     * Calculate the distance between a remote point and the drone
+     *
+     * @param int $x
+     * @param int $y
+     * @return int
+     */
+    public function calculateDistanceFromPoint(int $x, int $y) : int
+    {
+        $distanceX = pow($this->x, 2) - pow($x, 2);
+        $distanceY = pow($this->y, 2) - pow($y, 2);
+
+        debug($this);
+        debug($x);
+        debug($y);
+
+        return intval(sqrt($distanceX + $distanceY));
     }
 }
 
@@ -197,12 +249,18 @@ class Drone
      */
     private $y;
 
-    public function __construct($id, $owner)
+    /**
+     * @var int Target assignment
+     */
+    private $assignment;
+
+    public function __construct(int $id, int $owner)
     {
         $this->id = $id;
         $this->owner = $owner;
         $this->x = 0;
         $this->y = 0;
+        $this->assignment = new Zone();
     }
 
     public function getId() : int
@@ -233,5 +291,34 @@ class Drone
     public function setY(int $y)
     {
         $this->y = $y;
+    }
+
+    public function getAssignment() : Zone
+    {
+        return $this->assignment;
+    }
+
+    public function setAssignment(Zone $zone)
+    {
+        $this->assignment = $zone;
+    }
+
+    /**
+     * Calculate the distance between a remote point and the drone
+     *
+     * @param int $x
+     * @param int $y
+     * @return int
+     */
+    public function calculateDistanceFromPoint(int $x, int $y) : int
+    {
+        $distanceX = pow($this->x, 2) - pow($x, 2);
+        $distanceY = pow($this->y, 2) - pow($y, 2);
+
+        debug($this);
+        debug($x);
+        debug($y);
+
+        return intval(sqrt($distanceX + $distanceY));
     }
 }
