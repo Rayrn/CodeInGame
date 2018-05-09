@@ -13,13 +13,22 @@ while (true) {
 
     foreach ($zones as $zone) {
         $distances = [];
-        $playerDronesInRange = 0;
-        $npcDronesInRange = 0;
+        $npcDronesInRange = [];
 
-        foreach ($npcDrones as $npcDroneSet) {
+        foreach ($npcDrones as $owner => $npcDroneSet) {
+            $npcDronesInRange[$owner] = 0;
+
             foreach ($npcDroneSet as $npcDrone) {
-                $npcDronesInRange += $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY()) < 200;
+                $npcDronesInRange[$owner] += $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY()) < 100 ? 1 : 0;
             }
+        }
+
+        $dronesRequired = max($npcDronesInRange) + ((int) ($zone->getOwner() !== $gameState->getPlayerID()));
+
+        debug("NPCs: " . max($npcDronesInRange) . ", Modifier: " . ((int) ($zone->getOwner() !== $gameState->getPlayerID())) . ", Required: $dronesRequired");
+
+        if ($dronesRequired > $unassignedDrones) {
+            continue;
         }
 
         foreach ($playerDrones as $playerDrone) {
@@ -27,12 +36,6 @@ while (true) {
 
             $playerDronesInRange += $distance < 200;
             $distances[$playerDrone->getId()] = $distance;
-        }
-
-        $dronesRequired = ($npcDronesInRange - $playerDronesInRange) + ($zone->getId() !== $gameState->getPlayerID());
-
-        if ($dronesRequired > $unassignedDrones) {
-            continue;
         }
 
         asort($distances);
