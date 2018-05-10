@@ -2,49 +2,54 @@
 
 $gameState = new GameState();
 
-// game loop
 while (true) {
     $gameState->update();
 
     $unassignedDrones = $gameState->getDroneAllocation();
-    $playerDrones = $gameState->getPlayerDrones();
-    $npcDrones = $gameState->getNPCDrones();
-    $zones = $gameState->getZones();
+    $zonePriority = [];
 
-    foreach ($zones as $zone) {
+    foreach ($gameState->getZones() as $zone) {
         $distances = [];
         $npcDronesInRange = [];
 
-        foreach ($npcDrones as $owner => $npcDroneSet) {
+        foreach ($gameState->getNPCDrones() as $owner => $npcDroneSet) {
             $npcDronesInRange[$owner] = 0;
 
             foreach ($npcDroneSet as $npcDrone) {
-                $distance = $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
-                $npcDronesInRange[$owner] += $distance < 100;
+                $npcDronesInRange[$owner] += $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY()) < 100;
             }
         }
 
-        $dronesRequired = max($npcDronesInRange) + ((int) ($zone->getOwner() !== $gameState->getPlayerID()));
+        $dronesRequired = max($npcDronesInRange) + ($zone->getOwner() !== $gameState->getPlayerID());
 
+        if ($dronesRequired == 0) {
+            $dronesRequired = 1;
+        }
+
+        $zonePriority[$zone->getId()] = $dronesRequired;
+    }
+
+    asort($zonePriority);
+
+    foreach ($zonePriority as $zoneId => $dronesRequired) {
         if ($dronesRequired > $unassignedDrones) {
             continue;
         }
 
-        foreach ($playerDrones as $playerDrone) {
-            $distance = $playerDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
+        $zone = $gameState->getZone($zoneId);
 
-            $playerDronesInRange += $distance < 200;
-            $distances[$playerDrone->getId()] = $distance;
+        foreach ($gameState->getPlayerDrones() as $playerDrone) {
+            $distances[$playerDrone->getId()] = $playerDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
         }
 
         asort($distances);
 
         foreach (array_keys($distances) as $playerDroneId) {
-            if ($playerDrones[$playerDroneId]->getAssignment()->getId() >= 0) {
+            if ($gameState->getPlayerDrone($playerDroneId)->getAssignment()->getId() >= 0) {
                 continue;
             }
 
-            $playerDrone->setAssignment($zone);
+            $gameState->getPlayerDrone($playerDroneId)->setAssignment($zone);
             $unassignedDrones -= 1;
             $dronesRequired -= 1;
 
@@ -54,18 +59,18 @@ while (true) {
         }
     }
 
-    foreach ($playerDrones as $playerDrone) {
+    foreach ($gameState->getPlayerDrones() as $playerDrone) {
         if ($playerDrone->getAssignment()->getId() < 0) {
             $distances = [];
 
-            foreach ($zones as $zone) {
+            foreach ($gameState->getZones() as $zone) {
                 $distances[$zone->getId()] = $playerDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
             }
 
             asort($distances);
             reset($distances);
 
-            $playerDrone->setAssignment($zones[key($distances)]);
+            $playerDrone->setAssignment($gameState->getZone(key($distances)));
         }
 
         echo "{$playerDrone->getAssignment()->getX()} {$playerDrone->getAssignment()->getY()}\n";
@@ -73,7 +78,7 @@ while (true) {
 }
 
 /**
- * To debug (equivalent to var_dump): `error_log(var_export($var, true));`
+ * To debug (equivalent to var_dump)
  */
 function debug($var)
 {
@@ -175,6 +180,11 @@ class GameState
         return $this->zones;
     }
 
+    public function getZone(int $zoneId) : Zone
+    {
+        return $this->zones[$zoneId];
+    }
+
     public function getAllDrones() : array
     {
         return $this->drones;
@@ -183,6 +193,11 @@ class GameState
     public function getPlayerDrones() : array
     {
         return $this->drones[$this->playerId];
+    }
+
+    public function getPlayerDrone(int $droneId) : Drone
+    {
+        return $this->drones[$this->playerId][$droneId];
     }
 
     public function getNPCDrones() : array
