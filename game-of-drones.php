@@ -19,13 +19,12 @@ while (true) {
             $npcDronesInRange[$owner] = 0;
 
             foreach ($npcDroneSet as $npcDrone) {
-                $npcDronesInRange[$owner] += $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY()) < 100 ? 1 : 0;
+                $distance = $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
+                $npcDronesInRange[$owner] += $distance < 100;
             }
         }
 
         $dronesRequired = max($npcDronesInRange) + ((int) ($zone->getOwner() !== $gameState->getPlayerID()));
-
-        debug("NPCs: " . max($npcDronesInRange) . ", Modifier: " . ((int) ($zone->getOwner() !== $gameState->getPlayerID())) . ", Required: $dronesRequired");
 
         if ($dronesRequired > $unassignedDrones) {
             continue;
@@ -340,6 +339,6 @@ class Drone
         $distanceX = pow($this->x, 2) - pow($x, 2);
         $distanceY = pow($this->y, 2) - pow($y, 2);
 
-        return intval(sqrt($distanceX + $distanceY));
+        return intval(sqrt(abs($distanceX) + abs($distanceY)));
     }
 }
