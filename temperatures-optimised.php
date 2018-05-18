@@ -55,13 +55,17 @@ class GameState
             $key = round(count($temps) / 2);
 
             if ($temps[$key] > 0) {
-                $temps = abs($temps[$key - 1]) >= abs($temps[$key])
-                    ? array_slice($temps, $key)
-                    : array_slice($temps, 0, $key);
+                if (abs($temps[$key - 1]) >= abs($temps[$key])) {
+                    return $temps[$key];
+                }
+
+                $temps = array_slice($temps, 0, $key);
             } else {
-                $temps = abs($temps[$key + 1]) <= abs($temps[$key])
-                    ? array_slice($temps, $key)
-                    : array_slice($temps, 0, $key);
+                if (abs($temps[$key + 1]) < abs($temps[$key])) {
+                    return $temps[$key];
+                }
+
+                $temps = array_slice($temps, $key);
             }
         } while (count($temps) > 1);
 
