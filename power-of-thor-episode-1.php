@@ -57,6 +57,11 @@ class GameState
         $this->thor = new Thor($thorX, $thorY);
     }
 
+    public function update()
+    {
+        fscanf(STDIN, "%d", $this->turnsRemaining);
+    }
+
     public function getLight() : Light
     {
         return $this->light;
