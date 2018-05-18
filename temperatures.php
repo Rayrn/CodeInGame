@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\Temperates;
+namespace CodeInGame\Temperatures;
 
 /**
  * To debug (equivalent to var_dump)
