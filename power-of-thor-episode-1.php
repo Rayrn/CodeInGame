@@ -1,0 +1,217 @@
+<?php
+
+$gameState = new GameState();
+
+while (true) {
+    $gameState->update();
+
+    $compareX = $gameState->getLight()->getX() <=> $gameState->getThor()->getX();
+    $compareY = $gameState->getLight()->getY() <=> $gameState->getThor()->getY();
+
+    switch ($compareX) {
+        case 1:
+            $commandX = 'N';
+            break;
+        case -1:
+            $commandX = 'S';
+            break;
+        default:
+            $commandX = '';
+    }
+
+    switch ($compareY) {
+        case 1:
+            $commandY = 'E';
+            break;
+        case -1:
+            $commandY = 'W';
+            break;
+        default:
+            $commandY = '';
+    }
+
+    $gameState->getThor()->setXY(
+        $gameState->getThor()->getX() + $compareX,
+        $gameState->getThor()->getY() + $compareY
+    );
+
+    debug($gameState);
+
+    echo($commandX . $commandY . "\n");
+}
+
+/**
+ * To debug (equivalent to var_dump)
+ */
+function debug($var)
+{
+    error_log(var_export($var, true));
+}
+
+class GameState
+{
+    /**
+     * @var Light
+     */
+    private $light;
+
+    /**
+     * @var Thor
+     */
+    private $thor;
+
+    /**
+     * @var int Turns Remaining
+     */
+    private $turnsRemaining;
+
+    /**
+     * Create a new instance of this class
+     */
+    public function __construct()
+    {
+        fscanf(STDIN, "%d %d %d %d", $lightX, $lightY, $thorX, $thorY);
+
+        $this->light = new Light($lightX, $lightY);
+        $this->thor = new Thor($thorX, $thorY);
+    }
+
+    public function getLight() : Light
+    {
+        return $this->light;
+    }
+
+    public function getThor() : Thor
+    {
+        return $this->thor;
+    }
+}
+
+class Light implements Plottable
+{
+    /**
+     * @var int X co-ordinate
+     */
+    protected $x;
+
+    /**
+     * @var int Y co-ordinate
+     */
+    protected $y;
+
+    /**
+     * Create a new instance of this class
+     *
+     * @param int $x
+     * @param int $y
+     */
+    public function __construct(int $x, int $y)
+    {
+        $this->x = $x;
+        $this->y = $y;
+    }
+
+    /**
+     * Fetch the X co-ordinate
+     *
+     * @return int
+     */
+    public function getX() : int
+    {
+        return $this->x;
+    }
+
+    /**
+     * Fetch the Y co-ordinate
+     *
+     * @return int
+     */
+    public function getY() : int
+    {
+        return $this->y;
+    }
+}
+
+class Thor implements Plottable, Moveable
+{
+    /**
+     * @var int X co-ordinate
+     */
+    protected $x;
+
+    /**
+     * @var int Y co-ordinate
+     */
+    protected $y;
+
+    /**
+     * Create a new instance of this class
+     *
+     * @param int $x
+     * @param int $y
+     */
+    public function __construct(int $x, int $y)
+    {
+        $this->x = $x;
+        $this->y = $y;
+    }
+
+    /**
+     * Fetch the X co-ordinate
+     *
+     * @return int
+     */
+    public function getX() : int
+    {
+        return $this->x;
+    }
+
+    /**
+     * Fetch the Y co-ordinate
+     *
+     * @return int
+     */
+    public function getY() : int
+    {
+        return $this->y;
+    }
+    /**
+     * Set the XY co-ordinates
+     *
+     * @param int $x
+     * @param int $y
+     */
+    public function setXY(int $x, int $y)
+    {
+        $this->x = $x;
+        $this->y = $y;
+    }
+}
+
+interface Plottable
+{
+    /**
+     * Fetch the X co-ordinate
+     *
+     * @return int
+     */
+    public function getX() : int;
+
+    /**
+     * Fetch the Y co-ordinate
+     *
+     * @return int
+     */
+    public function getY() : int;
+}
+
+interface Moveable
+{
+    /**
+     * Set the XY co-ordinates
+     *
+     * @param int $x
+     * @param int $y
+     */
+    public function setXY(int $x, int $y);
+}
