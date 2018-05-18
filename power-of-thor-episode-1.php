@@ -8,27 +8,8 @@ while (true) {
     $compareX = $gameState->getLight()->getX() <=> $gameState->getThor()->getX();
     $compareY = $gameState->getLight()->getY() <=> $gameState->getThor()->getY();
 
-    switch ($compareX) {
-        case 1:
-            $commandX = 'N';
-            break;
-        case -1:
-            $commandX = 'S';
-            break;
-        default:
-            $commandX = '';
-    }
-
-    switch ($compareY) {
-        case 1:
-            $commandY = 'E';
-            break;
-        case -1:
-            $commandY = 'W';
-            break;
-        default:
-            $commandY = '';
-    }
+    $verticalDirection = [-1 => 'S', 0 => '', 1 => 'N'];
+    $horizontalDirection = [-1 => 'W', 0 => '', 1 => 'E'];
 
     $gameState->getThor()->setXY(
         $gameState->getThor()->getX() + $compareX,
@@ -37,7 +18,7 @@ while (true) {
 
     debug($gameState);
 
-    echo($commandX . $commandY . "\n");
+    echo($verticalDirection[$compareX] . $horizontalDirection[$compareY] . "\n");
 }
 
 /**
