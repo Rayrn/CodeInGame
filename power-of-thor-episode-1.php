@@ -1,25 +1,6 @@
 <?php
 
-$gameState = new GameState();
-
-while (true) {
-    $gameState->update();
-
-    $compareX = $gameState->getLight()->getX() <=> $gameState->getThor()->getX();
-    $compareY = $gameState->getLight()->getY() <=> $gameState->getThor()->getY();
-
-    $verticalDirection = [-1 => 'S', 0 => '', 1 => 'N'];
-    $horizontalDirection = [-1 => 'W', 0 => '', 1 => 'E'];
-
-    $gameState->getThor()->setXY(
-        $gameState->getThor()->getX() + $compareX,
-        $gameState->getThor()->getY() + $compareY
-    );
-
-    debug($gameState);
-
-    echo($verticalDirection[$compareX] . $horizontalDirection[$compareY] . "\n");
-}
+namespace CodeInGame\PowerOfThor;
 
 /**
  * To debug (equivalent to var_dump)
@@ -44,7 +25,7 @@ class GameState
     /**
      * @var int Turns Remaining
      */
-    private $turnsRemaining;
+    private $energy;
 
     /**
      * Create a new instance of this class
@@ -59,7 +40,7 @@ class GameState
 
     public function update()
     {
-        fscanf(STDIN, "%d", $this->turnsRemaining);
+        fscanf(STDIN, "%d", $this->energy);
     }
 
     public function getLight() : Light
@@ -200,4 +181,23 @@ interface Moveable
      * @param int $y
      */
     public function setXY(int $x, int $y);
+}
+
+$gameState = new GameState();
+
+while (true) {
+    $gameState->update();
+
+    $compareX = $gameState->getLight()->getX() <=> $gameState->getThor()->getX();
+    $compareY = $gameState->getLight()->getY() <=> $gameState->getThor()->getY();
+
+    $verticalDirection = [-1 => 'N', 0 => '', 1 => 'S'];
+    $horizontalDirection = [-1 => 'W', 0 => '', 1 => 'E'];
+
+    $gameState->getThor()->setXY(
+        $gameState->getThor()->getX() + $compareX,
+        $gameState->getThor()->getY() + $compareY
+    );
+
+    echo($verticalDirection[$compareY] . $horizontalDirection[$compareX] . "\n");
 }
