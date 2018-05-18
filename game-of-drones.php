@@ -9,24 +9,10 @@ while (true) {
     $zonePriority = [];
 
     foreach ($gameState->getZones() as $zone) {
-        $distances = [];
-        $npcDronesInRange = [];
-
-        foreach ($gameState->getNPCDrones() as $owner => $npcDroneSet) {
-            $npcDronesInRange[$owner] = 0;
-
-            foreach ($npcDroneSet as $npcDrone) {
-                $npcDronesInRange[$owner] += $npcDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY()) < 100;
-            }
-        }
-
-        $dronesRequired = max($npcDronesInRange) + ($zone->getOwner() !== $gameState->getPlayerID());
-
-        if ($dronesRequired == 0) {
-            $dronesRequired = 1;
-        }
-
-        $zonePriority[$zone->getId()] = $dronesRequired;
+        $zonePriority[$zone->getId()] = $zone->calculateRequiredDrones(
+            $gameState->getNPCDrones(),
+            $gameState->getPlayerID()
+        );
     }
 
     asort($zonePriority);
@@ -37,9 +23,10 @@ while (true) {
         }
 
         $zone = $gameState->getZone($zoneId);
+        $distances = [];
 
         foreach ($gameState->getPlayerDrones() as $playerDrone) {
-            $distances[$playerDrone->getId()] = $playerDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
+            $distances[$playerDrone->getId()] = $playerDrone->calculateDistanceFromZone($zone);
         }
 
         asort($distances);
@@ -64,7 +51,7 @@ while (true) {
             $distances = [];
 
             foreach ($gameState->getZones() as $zone) {
-                $distances[$zone->getId()] = $playerDrone->calculateDistanceFromPoint($zone->getX(), $zone->getY());
+                $distances[$zone->getId()] = $playerDrone->calculateDistanceFromZone($zone);
             }
 
             asort($distances);
@@ -264,6 +251,26 @@ class Zone
     {
         return $this->y;
     }
+
+    /**
+     * Calculate the number of drones required to hold/take the zone
+     *
+     * @param array $npcDroneSet
+     */
+    public function calculateRequiredDrones(array $npcDrones, int $playerId) : int
+    {
+        $npcDronesInRange = [];
+
+        foreach ($npcDrones as $npcDroneSet) {
+            foreach ($npcDroneSet as $npcDrone) {
+                $npcDronesInRange[$npcDrone->getOwner()] += $npcDrone->calculateDistanceFromZone($this) < 200;
+            }
+        }
+
+        $dronesRequired = max($npcDronesInRange) + ($this->owner !== $playerId);
+
+        return $dronesRequired ? $dronesRequired : 1;
+    }
 }
 
 class Drone
@@ -309,7 +316,7 @@ class Drone
 
     public function getOwner() : int
     {
-        $this->owner = $owner;
+        return $this->owner;
     }
 
     public function getX() : int
@@ -343,16 +350,15 @@ class Drone
     }
 
     /**
-     * Calculate the distance between a remote point and the drone
+     * Calculate the distance between a zone and the drone
      *
-     * @param int $x
-     * @param int $y
+     * @param Zone $zone
      * @return int
      */
-    public function calculateDistanceFromPoint(int $x, int $y) : int
+    public function calculateDistanceFromZone(Zone $zone) : int
     {
-        $distanceX = pow($this->x, 2) - pow($x, 2);
-        $distanceY = pow($this->y, 2) - pow($y, 2);
+        $distanceX = pow($this->x - $zone->getX(), 2);
+        $distanceY = pow($this->y - $zone->getY(), 2);
 
         return intval(sqrt(abs($distanceX) + abs($distanceY)));
     }
