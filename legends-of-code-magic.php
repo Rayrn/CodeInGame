@@ -7,12 +7,10 @@ $game = new Game(new CardFactory(), new Player(), new Opponent());
 // game loop
 while (true) {
     $game->updateState();
-    $game->applyActions();
+    $game->applyOpponentsActions();
+    $playerActions = $game->getPlayerActions();
 
-    debug($game->board);
-    debug($game->cardCollection);
-
-    echo("PASS\n");
+    echo implode(';', $playerActions) . "\n";
 
     $game->cleanup();
 }
@@ -30,10 +28,9 @@ class Game
     public const LOCATION_BOARD_PLAYER = 1;
     public const LOCATION_HAND_PLAYER = 0;
     public const LOCATION_BOARD_OPPONENT = -1;
-    public const LOCATION_GRAVEYARD = -2;
 
-    public $board;
-    public $cardCollection;
+    private $board;
+    private $cardCollection;
     private $cardFactory;
     private $player;
     private $opponent;
@@ -45,6 +42,7 @@ class Game
         $this->opponent = $opponent;
 
         $this->board = new Board();
+        $this->cardCollection = [];
     }
 
     public function updateState(): void
@@ -57,26 +55,26 @@ class Game
         for ($i = 0; $i < $cardCount; $i++) {
             fscanf(STDIN, "%d %d %d %d %d %d %d %s %d %d %d", $number, $instanceId, $location, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
 
-            $this->cardFactory->addTemplate($number, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
 
-            if (array_key_exists($instanceId, $this->cardCollection)) {
-                $this->update($instanceId, $location);
-            } else {
-                $this->add($this->cardFactory->create($number, $instanceId), $location);
+            if ($instanceId == '-1') {
+                $this->cardFactory->addTemplate($number, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
+                $instanceId = $i;
             }
-        }
 
-        $this->updateBoardState();
+            $this->add($this->cardFactory->create($number, $instanceId), $location);
+
+            $this->updateBoardState();
+        }
     }
 
-    public function applyActions()
+    public function applyOpponentsActions()
     {
         $actions = $this->opponent->getActions();
 
         foreach ($actions as $action) {
             $card = $this->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
 
-            $this->board->doAction($card->getInstanceId(), $action['action']);
+            $this->board->doAction($card, $action['action']);
         }
 
         $this->opponent->clearActions();
@@ -84,11 +82,7 @@ class Game
 
     public function cleanup(): void
     {
-        foreach ($this->cardCollection as $instanceId => $cardData) {
-            if (in_array($cardData['location'], [self::LOCATION_BOARD_OPPONENT, self::LOCATION_BOARD_PLAYER])) {
-                $this->update($instanceId, self::LOCATION_GRAVEYARD);
-            }
-        }
+        $this->cardCollection = [];
     }
 
     private function add(Card $card, int $location): void
@@ -111,18 +105,42 @@ class Game
         return null;
     }
 
-    private function update(int $instanceId, $location): void
-    {
-        $this->cardCollection[$instanceId]['location'] = $location;
-    }
-
-    private function updateBoardState()
+    private function updateBoardState(): void
     {
         foreach ($this->cardCollection as $instanceId => $cardData) {
             if (in_array($cardData['location'], [self::LOCATION_BOARD_OPPONENT, self::LOCATION_BOARD_PLAYER])) {
                 $this->board->add($instanceId);
             }
         }
+    }
+
+    public function getPlayerActions(): array
+    {
+        if (!$this->player->isDeckComplete()) {
+            $pick = 0;
+            $value = 0;
+
+            foreach ($this->cardCollection as $cardData) {
+                $card = $cardData['card'];
+
+                $costStatsRatio = $card->getCost() === 0 ? 0 : ($card->getAttack() + $card->getDefense()) / $card->getCost();
+
+                if (intval($card->getAttack() - $card->getDefense()) >= $card->getCost()) {
+                    $costStatsRatio = ($costStatsRatio / 3) * 2;
+                }
+
+                if ($costStatsRatio > $value) {
+                    $pick = $card->getInstanceId();
+                    $value = $costStatsRatio;
+                }
+            }
+
+            debug($this->cardCollection);
+
+            return [$pick];
+        }
+
+        return ['PASS'];
     }
 }
 
@@ -139,16 +157,26 @@ class CardReferenceCollection
     {
         $this->collection = [];
     }
+
+    public function list(): array
+    {
+        return $this->collection;
+    }
+
+    public function remove(int $instanceId): void
+    {
+        unset($this->collection[$instanceId]);
+    }
 }
 
 class Board extends CardReferenceCollection
 {
-    public function doAction(int $instanceId, string $action): void
+    public function doAction(Card $card, string $action): void
     {
-        foreach ($this->collection as $card)
+        foreach ($this->collection as $instanceId)
         {
-            if ($card->getInstanceId() == $instanceId) {
-                $this->processAction($action, $card);
+            if ($instanceId == $card->getInstanceId()) {
+                debug("$action, {$card->getNumber()}");
             }
         }
     }
@@ -162,22 +190,30 @@ class Player
     protected $draw;
 
     protected $deck;
-    protected $hand;
 
     public function __construct()
     {
         $this->deck = new CardReferenceCollection();
-        $this->hand = new CardReferenceCollection();
     }
 
     public function updateState(): void
     {
-        fscanf(STDIN, "%d %d %d %d %d", $health, $mana, $deck, $rune, $draw);
+        fscanf(STDIN, "%d %d %d %d %d", $health, $mana, $cardsInDeck, $rune, $draw);
 
         $this->health = $health;
         $this->mana = $mana;
         $this->rune = $rune;
         $this->draw = $draw;
+    }
+
+    public function getDeckDefinition()
+    {
+        return $this->deck;
+    }
+
+    public function isDeckComplete(): bool
+    {
+        return count($this->deck->list()) !== 30;
     }
 }
 
@@ -257,6 +293,21 @@ class Card
     public function getInstanceId(): int
     {
         return $this->instanceId;
+    }
+
+    public function getAttack(): int
+    {
+        return $this->attack;
+    }
+
+    public function getDefense(): int
+    {
+        return $this->defense;
+    }
+
+    public function getCost(): int
+    {
+        return $this->cost;
     }
 }
 
