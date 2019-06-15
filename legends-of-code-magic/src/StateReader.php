@@ -2,6 +2,8 @@
 
 namespace CodeInGame\LegendsOfCodeMagic;
 
+use CodeInGame\LegendsOfCodeMagic\Card\CardFactory;
+
 class StateReader
 {
     private $cardFactory;
@@ -53,7 +55,7 @@ class StateReader
 
 
             if ($instanceId == '-1') {
-                $instanceId = $i;
+                $instanceId = $i - 3;
             }
 
             $cardData[] = [$this->cardFactory->create($number, $instanceId), $location];

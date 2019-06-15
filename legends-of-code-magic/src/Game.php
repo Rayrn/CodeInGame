@@ -2,6 +2,15 @@
 
 namespace CodeInGame\LegendsOfCodeMagic;
 
+use CodeInGame\LegendsOfCodeMagic\Action\BattleAction;
+use CodeInGame\LegendsOfCodeMagic\Action\DraftAction;
+use CodeInGame\LegendsOfCodeMagic\Card\Card;
+use CodeInGame\LegendsOfCodeMagic\Card\CardCollection;
+use CodeInGame\LegendsOfCodeMagic\Card\CardFactory;
+use CodeInGame\LegendsOfCodeMagic\Card\CardReferenceCollection;
+use CodeInGame\LegendsOfCodeMagic\Player\Opponent;
+use CodeInGame\LegendsOfCodeMagic\Player\Player;
+
 class Game
 {
     public const LOCATION_BOARD_PLAYER = 1;
@@ -49,6 +58,16 @@ class Game
         return $this->opponent;
     }
 
+    public function updateState(array $cardData): void
+    {
+        foreach ($cardData as $data) {
+            [$card, $location] = $data;
+
+            $this->cardCollection->add($card, $location);
+            $this->board->add($card->getInstanceId());
+        }
+    }
+
     public function applyOpponentsActions(): void
     {
         $actions = $this->opponent->getActions();
@@ -56,58 +75,24 @@ class Game
         foreach ($actions as $action) {
             $card = $this->cardCollection->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
 
-            debug("{$card->getNumber()}, {$action['action']}");
+            // new Debug("{$card->getNumber()}, {$action['action']}");
         }
 
         $this->opponent->clearActions();
     }
 
-    public function updateState(array $cardData): void
+    public function getPlayerActions(): string
     {
-        foreach ($cardData as $data) {
-            [$card, $location] = $data;
+        $playerActions = in_array(-1, $this->board->list())
+            ? (new DraftAction($this->cardCollection))->getActions()
+            : (new BattleAction($this->cardCollection, $this->player, $this->opponent))->getActions();
 
-            if (in_array($location, [self::LOCATION_BOARD_OPPONENT, self::LOCATION_BOARD_PLAYER])) {
-                $this->cardCollection->add($card, $location);
-                $this->board->add($card->getInstanceId());
-            }
-        }
+        return implode(';', $playerActions) . "\n";
     }
 
     public function cleanup(): void
     {
         $this->cardCollection->clear();
         $this->board->clear();
-    }
-
-    public function getPlayerActions(): string
-    {
-        $playerActions = [];
-        // if (!$this->player->isDeckComplete()) {
-        //     $pick = 0;
-        //     $value = 0;
-
-        //     foreach ($this->cardCollection as $cardData) {
-        //         $card = $cardData['card'];
-
-        //         $costStatsRatio = $card->getCost() === 0 ? 0 : ($card->getAttack() + $card->getDefense()) / $card->getCost();
-
-        //         if (intval($card->getAttack() - $card->getDefense()) >= $card->getCost()) {
-        //             $costStatsRatio = ($costStatsRatio / 3) * 2;
-        //         }
-
-        //         if ($costStatsRatio > $value) {
-        //             $pick = $card->getInstanceId();
-        //             $value = $costStatsRatio;
-        //         }
-        //     }
-
-        //     debug($this->cardCollection);
-
-        //     return [$pick];
-        // }
-        $playerActions[] = 'PASS';
-
-        return implode(';', $playerActions) . "\n";
     }
 }

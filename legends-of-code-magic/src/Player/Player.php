@@ -1,6 +1,8 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\LegendsOfCodeMagic\Player;
+
+use CodeInGame\LegendsOfCodeMagic\Card\CardReferenceCollection;
 
 class Player
 {
@@ -44,7 +46,7 @@ class Player
         return $this->draw;
     }
 
-    public function getDeckDefinition()
+    public function getDeckDefinition(): CardReferenceCollection
     {
         return $this->deck;
     }

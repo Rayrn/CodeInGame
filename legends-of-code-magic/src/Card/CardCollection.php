@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\LegendsOfCodeMagic\Card;
 
 class CardCollection
 {
@@ -14,6 +14,11 @@ class CardCollection
     public function clear(): void
     {
         $this->collection = [];
+    }
+
+    public function get(string $instanceId): ?Card
+    {
+        return $this->collection[$instanceId] ?? null;
     }
 
     public function find(int $cardNumber, int $location): ?Card
@@ -31,9 +36,22 @@ class CardCollection
         return null;
     }
 
-    public function list(): array
+    public function listAll(): array
     {
         return $this->collection;
+    }
+
+    public function listForLocation(int $location): array
+    {
+        $list = [];
+
+        foreach ($this->collection as $data)  {
+            if ($data['location'] === $location) {
+                $list[] = $data['card'];
+            }
+        }
+
+        return $list;
     }
 
     public function remove(int $instanceId): void

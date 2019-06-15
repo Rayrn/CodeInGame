@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\LegendsOfCodeMagic\Card;
 
 class Card
 {

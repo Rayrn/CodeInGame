@@ -2,7 +2,7 @@
 
 namespace CodeInGame\LegendsOfCodeMagic;
 
-$game = new Game(new Player(), new Opponent());
+$game = new Game(new Player\Player(), new Player\Opponent());
 $stateReader = new StateReader($game);
 
 // game loop
@@ -13,12 +13,4 @@ while (true) {
     echo $game->getPlayerActions();
 
     $game->cleanup();
-}
-
-/**
- * To debug (equivalent to var_dump)
- */
-function debug($var)
-{
-    error_log(var_export($var, true));
 }
