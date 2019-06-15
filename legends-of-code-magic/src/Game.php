@@ -8,7 +8,6 @@ class Game
     public const LOCATION_HAND_PLAYER = 0;
     public const LOCATION_BOARD_OPPONENT = -1;
 
-    private $board;
     private $cardCollection;
     private $cardFactory;
     private $player;
@@ -20,7 +19,7 @@ class Game
         $this->player = $player;
         $this->opponent = $opponent;
 
-        $this->board = new Board();
+        $this->board = new CardCollection();
         $this->cardCollection = [];
     }
 
@@ -53,7 +52,7 @@ class Game
         foreach ($actions as $action) {
             $card = $this->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
 
-            $this->board->doAction($card, $action['action']);
+            debug("$card, $action['action']");
         }
 
         $this->opponent->clearActions();
