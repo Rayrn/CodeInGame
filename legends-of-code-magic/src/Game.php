@@ -8,6 +8,7 @@ class Game
     public const LOCATION_HAND_PLAYER = 0;
     public const LOCATION_BOARD_OPPONENT = -1;
 
+    private $board;
     private $cardCollection;
     private $cardFactory;
     private $player;
@@ -19,30 +20,33 @@ class Game
         $this->player = $player;
         $this->opponent = $opponent;
 
-        $this->board = new CardCollection();
-        $this->cardCollection = [];
+        $this->board = new CardReferenceCollection();
+        $this->cardCollection = new CardCollection();
     }
 
-    public function updateState(): void
+    public function getBoard(): CardReferenceCollection
     {
-        $this->player->updateState();
-        $this->opponent->updateState();
+        return $this->board;
+    }
 
-        fscanf(STDIN, "%d", $cardCount);
+    public function getCardCollection(): CardCollection
+    {
+        return $this->cardCollection;
+    }
 
-        for ($i = 0; $i < $cardCount; $i++) {
-            fscanf(STDIN, "%d %d %d %d %d %d %d %s %d %d %d", $number, $instanceId, $location, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
+    public function getCardFactory(): CardFactory
+    {
+        return $this->cardFactory;
+    }
 
+    public function getPlayer(): Player
+    {
+        return $this->player;
+    }
 
-            if ($instanceId == '-1') {
-                $this->cardFactory->addTemplate($number, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
-                $instanceId = $i;
-            }
-
-            $this->add($this->cardFactory->create($number, $instanceId), $location);
-
-            $this->updateBoardState();
-        }
+    public function getOpponent(): Opponent
+    {
+        return $this->opponent;
     }
 
     public function applyOpponentsActions()
@@ -52,73 +56,38 @@ class Game
         foreach ($actions as $action) {
             $card = $this->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
 
-            debug("$card, $action['action']");
+            debug("{$card->getNumber()}, {$action['action']}");
         }
 
         $this->opponent->clearActions();
     }
 
-    public function cleanup(): void
-    {
-        $this->cardCollection = [];
-    }
-
-    private function add(Card $card, int $location): void
-    {
-        $this->cardCollection[$card->getInstanceId()] = ['card' => $card, 'location' => $location];
-    }
-
-    private function find(int $cardNumber, int $location): ?Card
-    {
-        foreach ($this->cardCollection as $cardData) {
-            if ($cardData['location'] !== $location) {
-                continue;
-            }
-
-            if ($cardData['card']->getNumber() == $cardNumber) {
-                return $cardData['card'];
-            }
-        }
-
-        return null;
-    }
-
-    private function updateBoardState(): void
-    {
-        foreach ($this->cardCollection as $instanceId => $cardData) {
-            if (in_array($cardData['location'], [self::LOCATION_BOARD_OPPONENT, self::LOCATION_BOARD_PLAYER])) {
-                $this->board->add($instanceId);
-            }
-        }
-    }
-
     public function getPlayerActions(): array
     {
-        if (!$this->player->isDeckComplete()) {
-            $pick = 0;
-            $value = 0;
+        // if (!$this->player->isDeckComplete()) {
+        //     $pick = 0;
+        //     $value = 0;
 
-            foreach ($this->cardCollection as $cardData) {
-                $card = $cardData['card'];
+        //     foreach ($this->cardCollection as $cardData) {
+        //         $card = $cardData['card'];
 
-                $costStatsRatio = $card->getCost() === 0 ? 0 : ($card->getAttack() + $card->getDefense()) / $card->getCost();
+        //         $costStatsRatio = $card->getCost() === 0 ? 0 : ($card->getAttack() + $card->getDefense()) / $card->getCost();
 
-                if (intval($card->getAttack() - $card->getDefense()) >= $card->getCost()) {
-                    $costStatsRatio = ($costStatsRatio / 3) * 2;
-                }
+        //         if (intval($card->getAttack() - $card->getDefense()) >= $card->getCost()) {
+        //             $costStatsRatio = ($costStatsRatio / 3) * 2;
+        //         }
 
-                if ($costStatsRatio > $value) {
-                    $pick = $card->getInstanceId();
-                    $value = $costStatsRatio;
-                }
-            }
+        //         if ($costStatsRatio > $value) {
+        //             $pick = $card->getInstanceId();
+        //             $value = $costStatsRatio;
+        //         }
+        //     }
 
-            debug($this->cardCollection);
+        //     debug($this->cardCollection);
 
-            return [$pick];
-        }
+        //     return [$pick];
+        // }
 
         return ['PASS'];
     }
 }
-

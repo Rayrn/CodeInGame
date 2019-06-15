@@ -7,19 +7,23 @@ class Opponent extends Player
     private $cardsInHand = 0;
     private $actions = [];
 
-    public function updateState(): void
-    {
-        parent::updateState();
-
-        fscanf(STDIN, "%d %d", $cardsInHand, $action);
+    public function updateState(
+        int $health,
+        int $mana,
+        int $rune,
+        int $draw,
+        int $cardsInHand = 0, 
+        array $actions = []
+    ): void {
+        parent::updateState($health, $mana, $rune, $draw);
 
         $this->cardsInHand = $cardsInHand;
+        $this->actions = $actions;
+    }
 
-        for ($i = 0; $i < $action; $i++) {
-            [$cardNumber, $action] = explode(' ', stream_get_line(STDIN, 20 + 1, "\n"));
-
-            $this->actions[] = ['cardNumber' => $cardNumber, 'action' => $action];
-        }
+    public function getCardsInHand(): int
+    {
+        return $this->cardsInHand;
     }
 
     public function getActions(): array

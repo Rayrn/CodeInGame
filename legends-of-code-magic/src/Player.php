@@ -16,23 +16,36 @@ class Player
         $this->deck = new CardReferenceCollection();
     }
 
-    public function updateState(): void
+    public function updateState(int $health, int $mana, int $rune, int $draw): void
     {
-        fscanf(STDIN, "%d %d %d %d %d", $health, $mana, $cardsInDeck, $rune, $draw);
-
         $this->health = $health;
         $this->mana = $mana;
         $this->rune = $rune;
         $this->draw = $draw;
     }
 
+    public function getHealth(): int
+    {
+        return $this->health;
+    }
+
+    public function getMana(): int
+    {
+        return $this->mana;
+    }
+
+    public function getRune(): int
+    {
+        return $this->rune;
+    }
+
+    public function getDraw(): int
+    {
+        return $this->draw;
+    }
+
     public function getDeckDefinition()
     {
         return $this->deck;
-    }
-
-    public function isDeckComplete(): bool
-    {
-        return count($this->deck->list()) !== 30;
     }
 }
