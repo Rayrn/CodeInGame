@@ -2,15 +2,15 @@
 
 namespace CodeInGame\LegendsOfCodeMagic;
 
-$game = new Game(new CardFactory(), new Player(), new Opponent());
+$game = new Game(new Player(), new Opponent());
+$stateReader = new StateReader($game);
 
 // game loop
 while (true) {
-    $game->updateState();
-    $game->applyOpponentsActions();
-    $playerActions = $game->getPlayerActions();
+    $stateReader->updateState();
 
-    echo implode(';', $playerActions) . "\n";
+    $game->applyOpponentsActions();
+    echo $game->getPlayerActions();
 
     $game->cleanup();
 }

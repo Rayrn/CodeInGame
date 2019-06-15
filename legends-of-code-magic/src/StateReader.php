@@ -4,11 +4,14 @@ namespace CodeInGame\LegendsOfCodeMagic;
 
 class StateReader
 {
+    private $cardFactory;
     private $game;
 
     public function __construct(Game $game)
     {
         $this->game = $game;
+
+        $this->cardFactory = new CardFactory();
     }
 
     public function updateState(): void
@@ -44,24 +47,18 @@ class StateReader
     {
         fscanf(STDIN, "%d", $cardCount);
 
+        $cardData = [];
         for ($i = 0; $i < $cardCount; $i++) {
             fscanf(STDIN, "%d %d %d %d %d %d %d %s %d %d %d", $number, $instanceId, $location, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
 
 
             if ($instanceId == '-1') {
-                $this->cardFactory->addTemplate($number, $type, $cost, $att, $def, $abi, $myhealth, $opphealth, $draw);
                 $instanceId = $i;
             }
 
-            $this->add($this->cardFactory->create($number, $instanceId), $location);
+            $cardData[] = [$this->cardFactory->create($number, $instanceId), $location];
+        }
 
-            $this->updateBoardState();
-        }
-        
-        foreach ($this->cardCollection as $instanceId => $cardData) {
-            if (in_array($cardData['location'], [self::LOCATION_BOARD_OPPONENT, self::LOCATION_BOARD_PLAYER])) {
-                $this->board->add($instanceId);
-            }
-        }
+        $this->game->updateState($cardData);
     }
 }

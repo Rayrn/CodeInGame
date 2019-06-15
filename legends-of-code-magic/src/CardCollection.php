@@ -6,9 +6,9 @@ class CardCollection
 {
     protected $collection = [];
 
-    public function add(Card $card): void
+    public function add(Card $card, int $location): void
     {
-        $this->collection[$card->getInstanceId()] = $card;
+        $this->collection[$card->getInstanceId()] = ['card' => $card, 'location' => $location];
     }
 
     public function clear(): void

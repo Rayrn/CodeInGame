@@ -6,6 +6,7 @@ class Card
 {
     private $instanceId;
     private $number;
+    private $name;
     private $type;
     private $cost;
     private $attack;
@@ -18,7 +19,8 @@ class Card
     public function __construct(
         int $instanceId,
         int $number,
-        int $type,
+        string $name,
+        string $type,
         int $cost,
         int $attack,
         int $defense,
@@ -39,14 +41,29 @@ class Card
         $this->draw = $draw;
     }
 
+    public function getInstanceId(): int
+    {
+        return $this->instanceId;
+    }
+
     public function getNumber(): int
     {
         return $this->number;
     }
 
-    public function getInstanceId(): int
+    public function getName(): string
     {
-        return $this->instanceId;
+        return $this->name;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function getCost(): int
+    {
+        return $this->cost;
     }
 
     public function getAttack(): int
@@ -59,8 +76,23 @@ class Card
         return $this->defense;
     }
 
-    public function getCost(): int
+    public function getAbilities(): string
     {
-        return $this->cost;
+        return $this->abilities;
+    }
+
+    public function getMyHealthChange(): int
+    {
+        return $this->myHealthChange;
+    }
+
+    public function getOpponentHealthChange(): int
+    {
+        return $this->opponentHealthChange;
+    }
+
+    public function getDraw(): int
+    {
+        return $this->draw;
     }
 }

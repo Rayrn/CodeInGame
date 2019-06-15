@@ -14,14 +14,14 @@ class Game
     private $player;
     private $opponent;
 
-    public function __construct(CardFactory $cardFactory, Player $player, Opponent $opponent)
+    public function __construct(Player $player, Opponent $opponent)
     {
-        $this->cardFactory = $cardFactory;
         $this->player = $player;
         $this->opponent = $opponent;
 
         $this->board = new CardReferenceCollection();
         $this->cardCollection = new CardCollection();
+        $this->cardFactory = new CardFactory();
     }
 
     public function getBoard(): CardReferenceCollection
@@ -49,12 +49,12 @@ class Game
         return $this->opponent;
     }
 
-    public function applyOpponentsActions()
+    public function applyOpponentsActions(): void
     {
         $actions = $this->opponent->getActions();
 
         foreach ($actions as $action) {
-            $card = $this->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
+            $card = $this->cardCollection->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
 
             debug("{$card->getNumber()}, {$action['action']}");
         }
@@ -62,8 +62,27 @@ class Game
         $this->opponent->clearActions();
     }
 
-    public function getPlayerActions(): array
+    public function updateState(array $cardData): void
     {
+        foreach ($cardData as $data) {
+            [$card, $location] = $data;
+
+            if (in_array($location, [self::LOCATION_BOARD_OPPONENT, self::LOCATION_BOARD_PLAYER])) {
+                $this->cardCollection->add($card, $location);
+                $this->board->add($card->getInstanceId());
+            }
+        }
+    }
+
+    public function cleanup(): void
+    {
+        $this->cardCollection->clear();
+        $this->board->clear();
+    }
+
+    public function getPlayerActions(): string
+    {
+        $playerActions = [];
         // if (!$this->player->isDeckComplete()) {
         //     $pick = 0;
         //     $value = 0;
@@ -87,7 +106,8 @@ class Game
 
         //     return [$pick];
         // }
+        $playerActions[] = 'PASS';
 
-        return ['PASS'];
+        return implode(';', $playerActions) . "\n";
     }
 }
