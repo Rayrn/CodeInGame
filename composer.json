@@ -2,14 +2,17 @@
     "name": "rayrn/code-in-game",
     "description": "WIP/Solutions to code in game problems",
     "type": "project",
-    "require": {
-        "codeless/jugglecode": "^1.0"
-    },
     "license": "MIT",
     "authors": [
         {
             "name": "Jack Hansard",
             "email": "=jackhansard@gmail.com"
         }
-    ]
+    ],
+    "require": {
+        "codeless/jugglecode": "^1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.2"
+    }
 }
