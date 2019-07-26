@@ -318,31 +318,33 @@ use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
 class Game
 {
-    private const ASH_MOVEMENT = 1000;
-    private const ASH_RANGE = 2000;
-    private const ZOMBIE_MOVEMENT = 400;
-    /**
-     * @var StateReader
-     */
-    private $stateReader;
     /**
      * @var Entity
      */
     private $ash;
     /**
+     * @var DistanceCalculator
+     */
+    private $distanceCalculator;
+    /**
      * @var EntityCollection
      */
     private $humans;
     /**
+     * @var StateReader
+     */
+    private $stateReader;
+    /**
      * @var EntityCollection
      */
     private $zombies;
-    public function __construct(StateReader $stateReader, Entity $ash, EntityCollection $humans, EntityCollection $zombies)
+    public function __construct(StateReader $stateReader, Entity $ash, EntityCollection $humans, EntityCollection $zombies, DistanceCalculator $distanceCalculator)
     {
         $this->stateReader = $stateReader;
         $this->ash = $ash;
         $this->humans = $humans;
         $this->zombies = $zombies;
+        $this->distanceCalculator = new DistanceCalculator();
     }
     public function updateState() : void
     {
@@ -350,9 +352,63 @@ class Game
     }
     public function getAction() : string
     {
+        $ttDie = $this->distanceCalculator->collectionToCollection($this->ash, $this->zombies);
+        $ttLive = $this->distanceCalculator->collectionToCollection($this->humans, $this->zombies);
+        $ttSave = $this->distanceCalculator->collectionToCollection($this->ash, $this->humans);
+        new Debug($ttDie);
+        new Debug($ttLive);
+        new Debug($ttSave);
     }
     public function cleanup() : void
     {
+    }
+}
+}
+
+namespace CodeInGame\CodeVsZombies\Helper {
+use CodeInGame\CodeVsZombies\Entity\Ash;
+use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Entity\Position;
+class DistanceCalculator
+{
+    private const ASH_MOVEMENT = 1000;
+    private const ASH_RANGE = 2000;
+    private const ZOMBIE_MOVEMENT = 400;
+    /**
+     * Calculate distance in turns between Ash and a set of Entities
+     *
+     * @param Ash $ash
+     * @param EntityCollection $collection
+     * @return int[]
+     */
+    public function ashToCollection(Ash $ash, EntityCollection $collection) : array
+    {
+        $entites = [];
+        foreach ($collection->list() as $entity) {
+            $distance = $this->getDistance($ash->getPosition(), $entity->getPosition()) / self::ASH_MOVEMENT;
+            $entites[$entity->getId()] = intval($distance);
+        }
+        return $entites;
+    }
+    /**
+     * Calculate distance in turns between two sets of Entities (nearest only)
+     *
+     * @param EntityCollection $collectionA
+     * @param EntityCollection $collectionB
+     * @return int[]
+     */
+    public function collectionToCollection(EntityCollection $collectionA, EntityCollection $collectionB) : array
+    {
+        $entites = [];
+        foreach ($collectionA->list() as $entity) {
+            $nearest = $this->getNearestEntity($entity->getPosition(), $collectionB);
+            if (is_null($nearest)) {
+                // If null is returned then the second entity collection was empty. Skip.
+                break;
+            }
+            $entites[$entity->getId()] = intval($this->getDistance($entity, $nearest->getPosition()));
+        }
+        return $entites;
     }
     /**
      * Get the distance between two positions
@@ -361,31 +417,31 @@ class Game
      * @param Position $positionB
      * @return int
      */
-    private function getDistance(Position $positionA, Position $positionB) : int
+    public function getDistance(Position $positionA, Position $positionB) : int
     {
         $x = abs($postiionA->getX() - $postiionB->getX());
         $y = abs($postiionA->gety() - $postiionB->gety());
         return (int) sqrt($x * $x + $y * $y);
     }
     /**
-     * Calculate distance in turns between Ash and all zombies
+     * Get the nearest entity to a position
      *
-     * @param Ash $ash
-     * @param EntityCollection $zombieEntityCollection
-     * @return int[]
+     * @param Position $position
+     * @param EntityCollection $collection
+     * @return ?Entity
      */
-    private function timeToDie(Ash $ash, EntityCollection $zombieEntityCollection) : array
+    public function getNearestEntity(Position $position, EntityCollection $collection) : ?Entity
     {
-        $zombies = [];
-        foreach ($zombieEntityCollection->list() as $zombie) {
-            // Turns
-            $distance = $this->getDistance($ash->getPosition(), $zombie->getPosition()) / 1000;
-            $zombies[$zombie->getId()] = intval($distance) - self::ASH_RANGE / self::ASH_MOVEMENT;
+        $minDistance = null;
+        $nearest = null;
+        foreach ($collection->list() as $entity) {
+            $distance = $this->getDistance($position, ${$entity}->getPosition());
+            if ($distance < $minDistance || is_null($minDistance)) {
+                $minDistance = $distance;
+                $nearest = $entity;
+            }
         }
-        return $zombies;
-    }
-    private function timeToLive()
-    {
+        return $nearest;
     }
 }
 }
