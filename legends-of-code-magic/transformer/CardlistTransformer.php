@@ -10,14 +10,14 @@ foreach (explode("\n", $contents) as $card) {
     [$number, $name, $type, $cost, $attack, $def, $abi, $php, $ehp, $cd, $desc] = explode(' ; ', $card);
 
     $data = [
-        (int) $number, 
-        trim($name), 
-        trim($type), 
-        (int) $cost, 
-        (int) $attack, 
+        (int) $number,
+        trim($name),
+        trim($type),
+        (int) $cost,
+        (int) $attack,
         (int) $def,
-        trim($abi), 
-        (int) $php, 
+        trim($abi),
+        (int) $php,
         (int) $ehp,
         (int) $cd,
         trim(preg_replace('/(\s|\\\\n)/', ' ', $desc))

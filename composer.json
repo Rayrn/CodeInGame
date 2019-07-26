@@ -6,12 +6,13 @@
     "authors": [
         {
             "name": "Jack Hansard",
-            "email": "=jackhansard@gmail.com"
+            "email": "jackhansard@gmail.com"
         }
     ],
     "autoload": {
         "psr-4": {
-            "CodeInGame\\LegendsOfCodeMagic\\": "legends-of-code-magic/src"
+            "CodeInGame\\LegendsOfCodeMagic\\": "legends-of-code-magic/src",
+            "CodeInGame\\CodeVsZombies\\": "code-vs-zombies/src"
         }
     },
     "require-dev": {
