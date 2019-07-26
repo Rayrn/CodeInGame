@@ -35,7 +35,7 @@ class EntityCollection
      * @param ...Entity $entities
      * @return void
      */
-    public function setEntities(...Identifiable $entities): void
+    public function setEntities(Identifiable ...$entities): void
     {
         $this->entities = [];
 

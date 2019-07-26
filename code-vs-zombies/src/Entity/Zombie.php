@@ -7,12 +7,12 @@ class Zombie extends Entity implements Moveable
     /**
      * @var int
      */
-    private $nextPosition
+    private $nextPosition;
 
     /**
      * Create a new Zombie Entity
      *
-     * @param int $id;
+     * @param int $id
      */
     public function __construct(int $id)
     {

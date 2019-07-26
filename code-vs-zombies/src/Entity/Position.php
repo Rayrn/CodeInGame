@@ -30,7 +30,7 @@ class Position
      *
      * @return int
      */
-    public function getX(): int;
+    public function getX(): int
     {
         return $this->x;
     }
@@ -40,7 +40,7 @@ class Position
      *
      * @return int
      */
-    public function getY(): int;
+    public function getY(): int
     {
         return $this->y;
     }
