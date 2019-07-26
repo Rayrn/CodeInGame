@@ -26,6 +26,16 @@ class Position
     }
 
     /**
+     * Outputs a representation of the object as a string
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->x . ' ' . $this->y;
+    }
+
+    /**
      * Get the X position
      *
      * @return int

@@ -4,7 +4,7 @@ class Debug
 {
     public function __construct($entity)
     {
-        error_log(var_export($entity, true));
+        error_log(print_r($entity, true));
     }
 }
 }
@@ -48,10 +48,6 @@ abstract class Entity implements Identifiable, Mappable
     public const HUMAN = 'human';
     public const ZOMBIE = 'zombie';
     /**
-     * @var string
-     */
-    protected $type;
-    /**
      * @var int
      */
     protected $id;
@@ -59,6 +55,10 @@ abstract class Entity implements Identifiable, Mappable
      * @var Position
      */
     protected $position;
+    /**
+     * @var string
+     */
+    protected $type;
     public function __construct(string $type, int $id)
     {
         if (!in_array($type, self::VALID_TYPES)) {
@@ -147,6 +147,12 @@ class EntityCollection
             $this->entities[] = $entity;
         }
     }
+    /**
+     * Get an Entity from the list
+     *
+     * @param int $id
+     * @return Entity
+     */
     public function get(int $id) : ?Entity
     {
         foreach ($this->entities as $entity) {
@@ -164,6 +170,20 @@ class EntityCollection
     public function list() : array
     {
         return $this->entities;
+    }
+    /**
+     * Remove an Entity from the list
+     *
+     * @param int $id
+     * @return void
+     */
+    public function remove(int $id) : void
+    {
+        foreach ($this->entities as $key => $entity) {
+            if ($entity->getId() == $id) {
+                unset($this->entities[$key]);
+            }
+        }
     }
 }
 }
@@ -255,6 +275,15 @@ class Position
         $this->y = $y;
     }
     /**
+     * Outputs a representation of the object as a string
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->x . ' ' . $this->y;
+    }
+    /**
      * Get the X position
      *
      * @return int
@@ -317,12 +346,14 @@ namespace CodeInGame\CodeVsZombies {
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Entity\Position;
 use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
 class Game
 {
     private const ASH_MOVEMENT = 1000;
     private const ASH_RANGE = 2000;
     private const ZOMBIE_MOVEMENT = 400;
+    private const ZOMBIE_RANGE = 0;
     /**
      * @var Entity
      */
@@ -351,27 +382,84 @@ class Game
         $this->zombies = $zombies;
         $this->distanceCalculator = new DistanceCalculator();
     }
+    /**
+     * Update the game state
+     *
+     * @return void
+     */
     public function updateState() : void
     {
         $this->stateReader->updateState($this->ash, $this->humans, $this->zombies);
     }
-    public function getAction() : string
+    /**
+     * Get the next target position
+     *
+     * @return Position
+     */
+    public function getAction() : Position
     {
-        $ttDie = $this->distanceCalculator->ashToCollection($this->ash, $this->zombies);
-        $ttLive = $this->distanceCalculator->collectionToCollection($this->humans, $this->zombies);
-        $ttSave = $this->distanceCalculator->ashToCollection($this->ash, $this->humans);
-        new Debug($ttDie);
-        new Debug($ttLive);
-        new Debug($ttSave);
-        return '';
+        if (count($this->zombies->list()) == 1) {
+            return $this->getFirstEntityPosition($this->zombies);
+        }
+        if (count($this->humans->list()) == 1) {
+            return $this->getFirstEntityPosition($this->humans);
+        }
+        $priorityList = $this->getPriority();
+        if (count($priorityList) == 1) {
+            return $this->humans->get(array_key_first($priorityList))->getPosition();
+        }
+        $hitList = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->ashToCollection($this->ash, $this->zombies), self::ASH_MOVEMENT, self::ASH_RANGE);
+        sort($hitList);
+        if (min($priorityList) > min($hitList)) {
+            new Debug($this->zombies);
+            new Debug($hitList);
+            $zombieId = array_keys($hitList, min($hitList));
+            if (is_array($zombieId)) {
+                new Debug($zombieId);
+                $zombieId = array_key_first($zombieId);
+            }
+            new Debug($zombieId);
+            return $this->zombies->get($zombieId)->getPosition();
+        }
+        $humanId = array_keys($priorityList, min($priorityList));
+        if (is_array($humanId)) {
+            $humanId = array_key_first($humanId);
+        }
+        return $this->humans->get($humanId)->getPosition();
     }
-    public function cleanup() : void
+    /**
+     * Retreive the position of the first entity in the collection
+     *
+     * @param EntityCollection $collection
+     * @return Position
+     */
+    private function getFirstEntityPosition(EntityCollection $collection) : Position
     {
+        $entities = $collection->list();
+        return reset($entities)->getPosition();
+    }
+    private function getPriority() : array
+    {
+        $timeToLive = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->collectionToCollection($this->humans, $this->zombies), self::ZOMBIE_MOVEMENT, self::ZOMBIE_RANGE);
+        $timeToSave = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->ashToCollection($this->ash, $this->humans), self::ASH_MOVEMENT, self::ASH_RANGE);
+        // Filter out the walking dead
+        foreach ($this->humans->list() as $human) {
+            $id = $human->getId();
+            $ttl = $timeToLive[$id] ?? -1;
+            $tts = $timeToSave[$id] ?? -1;
+            if ($ttl < $tts || $tts < 0) {
+                unset($timeToLive[$id]);
+                unset($timeToSave[$id]);
+            }
+        }
+        sort($timeToSave);
+        return $timeToLive;
     }
 }
 }
 
 namespace CodeInGame\CodeVsZombies\Helper {
+use CodeInGame\CodeVsZombies\Debug;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
@@ -414,13 +502,30 @@ class DistanceCalculator
         return $entites;
     }
     /**
+     * Calculate the number of turns until an entity is interacted with
+     *
+     * @param array $distances
+     * @param int $movement
+     * @param int $range
+     * @return int[]
+     */
+    public function getTurnsToInteract(array $distances, int $movement, int $range) : array
+    {
+        $turns = [];
+        foreach ($distances as $key => $distance) {
+            $turns[$key] = (int) ceil(($distance - $range) / $movement);
+        }
+        new Debug($turns);
+        return $turns;
+    }
+    /**
      * Get the distance between two positions
      *
      * @param Position $positionA
      * @param Position $positionB
      * @return int
      */
-    public function getDistance(Position $positionA, Position $positionB) : int
+    private function getDistance(Position $positionA, Position $positionB) : int
     {
         $x = abs($positionA->getX() - $positionB->getX());
         $y = abs($positionA->gety() - $positionB->gety());
@@ -433,7 +538,7 @@ class DistanceCalculator
      * @param EntityCollection $collection
      * @return ?Entity
      */
-    public function getNearestEntity(Position $position, EntityCollection $collection) : ?Entity
+    private function getNearestEntity(Position $position, EntityCollection $collection) : ?Entity
     {
         $minDistance = null;
         $nearest = null;
@@ -458,8 +563,7 @@ $game = new Game(new StateReader(), new Ash(), new EntityCollection(Entity::HUMA
 // game loop
 while (true) {
     $game->updateState();
-    echo $game->getAction();
-    $game->cleanup();
+    echo $game->getAction() . PHP_EOL;
 }
 }
 

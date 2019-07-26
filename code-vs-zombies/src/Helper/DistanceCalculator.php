@@ -2,6 +2,7 @@
 
 namespace CodeInGame\CodeVsZombies\Helper;
 
+use CodeInGame\CodeVsZombies\Debug;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
@@ -54,13 +55,36 @@ class DistanceCalculator
     }
 
     /**
+     * Calculate the number of turns until an entity is interacted with
+     *
+     * @param array $distances
+     * @param int $movement
+     * @param int $range
+     * @return int[]
+     */
+    public function getTurnsToInteract(array $distances, int $movement, int $range): array
+    {
+        $turns = [];
+
+        foreach ($distances as $key => $distance) {
+            $turns[$key] = (int) ceil(
+                ($distance - $range) / $movement
+            );
+        }
+
+        new Debug($turns);
+
+        return $turns;
+    }
+
+    /**
      * Get the distance between two positions
      *
      * @param Position $positionA
      * @param Position $positionB
      * @return int
      */
-    public function getDistance(Position $positionA, Position $positionB): int
+    private function getDistance(Position $positionA, Position $positionB): int
     {
         $x = abs($positionA->getX() - $positionB->getX());
         $y = abs($positionA->gety() - $positionB->gety());
@@ -75,7 +99,7 @@ class DistanceCalculator
      * @param EntityCollection $collection
      * @return ?Entity
      */
-    public function getNearestEntity(Position $position, EntityCollection $collection): ?Entity
+    private function getNearestEntity(Position $position, EntityCollection $collection): ?Entity
     {
         $minDistance = null;
         $nearest = null;

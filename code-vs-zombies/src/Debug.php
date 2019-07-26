@@ -6,6 +6,6 @@ class Debug
 {
     public function __construct($entity)
     {
-        error_log(var_export($entity, true));
+        error_log(print_r($entity, true));
     }
 }

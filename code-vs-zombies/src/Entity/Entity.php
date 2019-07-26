@@ -12,11 +12,6 @@ abstract class Entity implements Identifiable, Mappable
     public const ZOMBIE = 'zombie';
 
     /**
-     * @var string
-     */
-    protected $type;
-
-    /**
      * @var int
      */
     protected $id;
@@ -25,6 +20,11 @@ abstract class Entity implements Identifiable, Mappable
      * @var Position
      */
     protected $position;
+
+    /**
+     * @var string
+     */
+    protected $type;
 
     public function __construct(string $type, int $id)
     {

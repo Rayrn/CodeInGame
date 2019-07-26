@@ -48,6 +48,12 @@ class EntityCollection
         }
     }
 
+    /**
+     * Get an Entity from the list
+     *
+     * @param int $id
+     * @return Entity
+     */
     public function get(int $id): ?Entity
     {
         foreach ($this->entities as $entity) {
@@ -67,5 +73,20 @@ class EntityCollection
     public function list(): array
     {
         return $this->entities;
+    }
+
+    /**
+     * Remove an Entity from the list
+     *
+     * @param int $id
+     * @return void
+     */
+    public function remove(int $id): void
+    {
+        foreach ($this->entities as $key => $entity) {
+            if ($entity->getId() == $id) {
+                unset($this->entities[$key]);
+            }
+        }
     }
 }

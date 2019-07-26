@@ -19,7 +19,5 @@ $game = new Game(
 while (true) {
     $game->updateState();
 
-    echo $game->getAction();
-
-    $game->cleanup();
+    echo $game->getAction() . PHP_EOL;
 }
