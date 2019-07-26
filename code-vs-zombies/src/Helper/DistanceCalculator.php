@@ -3,17 +3,14 @@
 namespace CodeInGame\CodeVsZombies\Helper;
 
 use CodeInGame\CodeVsZombies\Entity\Ash;
+use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
 use CodeInGame\CodeVsZombies\Entity\Position;
 
 class DistanceCalculator
 {
-    private const ASH_MOVEMENT = 1000;
-    private const ASH_RANGE = 2000;
-    private const ZOMBIE_MOVEMENT = 400;
-
     /**
-     * Calculate distance in turns between Ash and a set of Entities
+     * Calculate distance between Ash and a set of Entities
      *
      * @param Ash $ash
      * @param EntityCollection $collection
@@ -23,9 +20,10 @@ class DistanceCalculator
     {
         $entites = [];
         foreach ($collection->list() as $entity) {
-            $distance = $this->getDistance($ash->getPosition(), $entity->getPosition()) / self::ASH_MOVEMENT;
-
-            $entites[$entity->getId()] = intval($distance);
+            $entites[$entity->getId()] = intval($this->getDistance(
+                $ash->getPosition(),
+                $entity->getPosition()
+            ));
         }
 
         return $entites;
@@ -49,7 +47,7 @@ class DistanceCalculator
                 break;
             }
 
-            $entites[$entity->getId()] = intval($this->getDistance($entity, $nearest->getPosition()));
+            $entites[$entity->getId()] = intval($this->getDistance($entity->getPosition(), $nearest->getPosition()));
         }
 
         return $entites;
@@ -64,8 +62,8 @@ class DistanceCalculator
      */
     public function getDistance(Position $positionA, Position $positionB): int
     {
-        $x = abs($postiionA->getX() - $postiionB->getX());
-        $y = abs($postiionA->gety() - $postiionB->gety());
+        $x = abs($positionA->getX() - $positionB->getX());
+        $y = abs($positionA->gety() - $positionB->gety());
 
         return (int) sqrt(($x * $x) + ($y * $y));
     }
@@ -83,7 +81,7 @@ class DistanceCalculator
         $nearest = null;
 
         foreach ($collection->list() as $entity) {
-            $distance = $this->getDistance($position, $$entity->getPosition());
+            $distance = $this->getDistance($position, $entity->getPosition());
 
             if ($distance < $minDistance || is_null($minDistance)) {
                 $minDistance = $distance;

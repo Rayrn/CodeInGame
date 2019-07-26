@@ -314,10 +314,15 @@ class Zombie extends Entity implements Moveable
 }
 
 namespace CodeInGame\CodeVsZombies {
+use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
 class Game
 {
+    private const ASH_MOVEMENT = 1000;
+    private const ASH_RANGE = 2000;
+    private const ZOMBIE_MOVEMENT = 400;
     /**
      * @var Entity
      */
@@ -338,7 +343,7 @@ class Game
      * @var EntityCollection
      */
     private $zombies;
-    public function __construct(StateReader $stateReader, Entity $ash, EntityCollection $humans, EntityCollection $zombies, DistanceCalculator $distanceCalculator)
+    public function __construct(StateReader $stateReader, Ash $ash, EntityCollection $humans, EntityCollection $zombies, DistanceCalculator $distanceCalculator)
     {
         $this->stateReader = $stateReader;
         $this->ash = $ash;
@@ -352,12 +357,13 @@ class Game
     }
     public function getAction() : string
     {
-        $ttDie = $this->distanceCalculator->collectionToCollection($this->ash, $this->zombies);
+        $ttDie = $this->distanceCalculator->ashToCollection($this->ash, $this->zombies);
         $ttLive = $this->distanceCalculator->collectionToCollection($this->humans, $this->zombies);
-        $ttSave = $this->distanceCalculator->collectionToCollection($this->ash, $this->humans);
+        $ttSave = $this->distanceCalculator->ashToCollection($this->ash, $this->humans);
         new Debug($ttDie);
         new Debug($ttLive);
         new Debug($ttSave);
+        return '';
     }
     public function cleanup() : void
     {
@@ -367,15 +373,13 @@ class Game
 
 namespace CodeInGame\CodeVsZombies\Helper {
 use CodeInGame\CodeVsZombies\Entity\Ash;
+use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
 use CodeInGame\CodeVsZombies\Entity\Position;
 class DistanceCalculator
 {
-    private const ASH_MOVEMENT = 1000;
-    private const ASH_RANGE = 2000;
-    private const ZOMBIE_MOVEMENT = 400;
     /**
-     * Calculate distance in turns between Ash and a set of Entities
+     * Calculate distance between Ash and a set of Entities
      *
      * @param Ash $ash
      * @param EntityCollection $collection
@@ -385,8 +389,7 @@ class DistanceCalculator
     {
         $entites = [];
         foreach ($collection->list() as $entity) {
-            $distance = $this->getDistance($ash->getPosition(), $entity->getPosition()) / self::ASH_MOVEMENT;
-            $entites[$entity->getId()] = intval($distance);
+            $entites[$entity->getId()] = intval($this->getDistance($ash->getPosition(), $entity->getPosition()));
         }
         return $entites;
     }
@@ -406,7 +409,7 @@ class DistanceCalculator
                 // If null is returned then the second entity collection was empty. Skip.
                 break;
             }
-            $entites[$entity->getId()] = intval($this->getDistance($entity, $nearest->getPosition()));
+            $entites[$entity->getId()] = intval($this->getDistance($entity->getPosition(), $nearest->getPosition()));
         }
         return $entites;
     }
@@ -419,8 +422,8 @@ class DistanceCalculator
      */
     public function getDistance(Position $positionA, Position $positionB) : int
     {
-        $x = abs($postiionA->getX() - $postiionB->getX());
-        $y = abs($postiionA->gety() - $postiionB->gety());
+        $x = abs($positionA->getX() - $positionB->getX());
+        $y = abs($positionA->gety() - $positionB->gety());
         return (int) sqrt($x * $x + $y * $y);
     }
     /**
@@ -435,7 +438,7 @@ class DistanceCalculator
         $minDistance = null;
         $nearest = null;
         foreach ($collection->list() as $entity) {
-            $distance = $this->getDistance($position, ${$entity}->getPosition());
+            $distance = $this->getDistance($position, $entity->getPosition());
             if ($distance < $minDistance || is_null($minDistance)) {
                 $minDistance = $distance;
                 $nearest = $entity;
@@ -450,102 +453,17 @@ namespace CodeInGame\CodeVsZombies {
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
-$game = new Game(new StateReader(), new Ash(), new EntityCollection(Entity::HUMAN), new EntityCollection(Entity::ZOMBIE));
+use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
+$game = new Game(new StateReader(), new Ash(), new EntityCollection(Entity::HUMAN), new EntityCollection(Entity::ZOMBIE), new DistanceCalculator());
 // game loop
 while (true) {
     $game->updateState();
-    echo $game->getActions();
+    echo $game->getAction();
     $game->cleanup();
 }
 }
 
 namespace {
-while (true) {
-    // $ash = getAsh();
-    // $humans = getHumans();
-    // $zombies = getZombies();
-    $zombies = ttDie($ash, $zombies);
-    $humans = ttLive($humans, $zombies);
-    $humans = ttSave($ash, $humans);
-    $target = getTarget($zombies, $humans);
-    echo $target['x'], ' ', $target['y'], "\n";
-}
-// function getAsh() : array
-// {
-//     fscanf(STDIN, "%d %d", $x, $y);
-//     return [
-//         'x' => $x,
-//         'y' => $y
-//     ];
-// }
-// function getHumans() : array
-// {
-//     $humans = [];
-//     fscanf(STDIN, "%d", $humanCount);
-//     for ($i = 0; $i < $humanCount; $i++) {
-//         fscanf(STDIN, "%d %d %d", $humanId, $humanX, $humanY);
-//         $humans[$humanId] = [
-//             'x' => $humanX,
-//             'y' => $humanY
-//         ];
-//     }
-//     return $humans;
-// }
-// function getZombies() : array
-// {
-//     $zombies = [];
-//     fscanf(STDIN, "%d", $zombieCount);
-//     for ($i = 0; $i < $zombieCount; $i++) {
-//         fscanf(STDIN, "%d %d %d %d %d", $zombieId, $zombieX, $zombieY, $zombieXNext, $zombieYNext);
-//         $zombies[$zombieId] = [
-//             'x' => $zombieX,
-//             'y' => $zombieY,
-//             'xNext' => $zombieXNext,
-//             'yNext' => $zombieYNext
-//         ];
-//     }
-//     return $zombies;
-// }
-function ttDie(array $ash, array $zombies) : array
-{
-    foreach ($zombies as $zombieId => $zombie) {
-        $zombies[$zombieId]['distance'] = intval(getDistance($ash, $zombie) / 2000);
-    }
-    return $zombies;
-}
-function ttLive(array $humans, array $zombies) : array
-{
-    foreach ($humans as $humanId => $human) {
-        $humans[$humanId]['distance']['zombie'] = intval(getDistance($human, getNearest($human, $zombies)) / 400);
-    }
-    return $humans;
-}
-function ttSave(array $ash, array $humans) : array
-{
-    foreach ($humans as $humanId => $human) {
-        $humans[$humanId]['distance']['ash'] = intval(getDistance($ash, $human) / 1000);
-    }
-    return $humans;
-}
-function getNearest(array $source, array $opponents)
-{
-    $minDistance = 100000;
-    $target = null;
-    foreach ($opponents as $opponent) {
-        $distance = getDistance($source, $opponent);
-        if ($distance < $minDistance) {
-            $minDistance = $distance;
-            $target = $opponent;
-        }
-    }
-    return $target;
-}
-// function getDistance($entityA, $entityB) : int
-// {
-//     $x = abs($entityA['x'] - $entityB['x']);
-//     $y = abs($entityA['y'] - $entityB['y']);
-//     return (int) sqrt(($x * $x) + ($y * $y));
-// }
 function getTarget(array $zombies, array $humans) : array
 {
     if (count($zombies) == 1) {
@@ -569,10 +487,6 @@ function getTarget(array $zombies, array $humans) : array
         return $a['threat'] <=> $b['threat'];
     });
     return array_shift($humans);
-}
-function debug($value = '')
-{
-    error_log(var_export($value, true));
 }
 }
 

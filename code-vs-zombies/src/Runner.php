@@ -5,19 +5,21 @@ namespace CodeInGame\CodeVsZombies;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
 
 $game = new Game(
     new StateReader(),
     new Ash(),
     new EntityCollection(Entity::HUMAN),
-    new EntityCollection(Entity::ZOMBIE)
+    new EntityCollection(Entity::ZOMBIE),
+    new DistanceCalculator()
 );
 
 // game loop
 while (true) {
     $game->updateState();
 
-    echo $game->getActions();
+    echo $game->getAction();
 
     $game->cleanup();
 }

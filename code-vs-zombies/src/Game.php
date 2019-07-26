@@ -2,11 +2,17 @@
 
 namespace CodeInGame\CodeVsZombies;
 
+use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
 
 class Game
 {
+    private const ASH_MOVEMENT = 1000;
+    private const ASH_RANGE = 2000;
+    private const ZOMBIE_MOVEMENT = 400;
+
     /**
      * @var Entity
      */
@@ -34,7 +40,7 @@ class Game
 
     public function __construct(
         StateReader $stateReader,
-        Entity $ash,
+        Ash $ash,
         EntityCollection $humans,
         EntityCollection $zombies,
         DistanceCalculator $distanceCalculator
@@ -55,13 +61,15 @@ class Game
 
     public function getAction(): string
     {
-        $ttDie = $this->distanceCalculator->collectionToCollection($this->ash, $this->zombies);
+        $ttDie = $this->distanceCalculator->ashToCollection($this->ash, $this->zombies);
         $ttLive = $this->distanceCalculator->collectionToCollection($this->humans, $this->zombies);
-        $ttSave = $this->distanceCalculator->collectionToCollection($this->ash, $this->humans);
+        $ttSave = $this->distanceCalculator->ashToCollection($this->ash, $this->humans);
 
         new Debug($ttDie);
         new Debug($ttLive);
         new Debug($ttSave);
+
+        return '';
     }
 
     public function cleanup(): void
