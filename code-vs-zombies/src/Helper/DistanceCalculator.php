@@ -72,8 +72,6 @@ class DistanceCalculator
             );
         }
 
-        new Debug($turns);
-
         return $turns;
     }
 

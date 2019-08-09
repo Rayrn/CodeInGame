@@ -66,6 +66,16 @@ class EntityCollection
     }
 
     /**
+     * Get the collection type
+     *
+     * @return strings
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
      * Get a list of Entities
      *
      * @return array

@@ -83,40 +83,17 @@ class Game
 
         $priorityList = $this->getPriority();
 
-        if (count($priorityList) == 1) {
-            return $this->humans->get(array_key_first($priorityList))->getPosition();
-        }
-
         $hitList = $this->distanceCalculator->getTurnsToInteract(
             $this->distanceCalculator->ashToCollection($this->ash, $this->zombies),
             self::ASH_MOVEMENT,
             self::ASH_RANGE
         );
 
-        sort($hitList);
-
         if (min($priorityList) > min($hitList)) {
-            new Debug($this->zombies);
-            new Debug($hitList);
-
-            $zombieId = array_keys($hitList, min($hitList));
-
-            if (is_array($zombieId)) {
-                new Debug($zombieId);
-                $zombieId = array_key_first($zombieId);
-            }
-            new Debug($zombieId);
-
-            return $this->zombies->get($zombieId)->getPosition();
+            return $this->getTargetFromList($hitList, $this->zombies);
         }
-
-        $humanId = array_keys($priorityList, min($priorityList));
-
-        if (is_array($humanId)) {
-            $humanId = array_key_first($humanId);
-        }
-
-        return $this->humans->get($humanId)->getPosition();
+        
+        return $this->getTargetFromList($priorityList, $this->humans);
     }
 
     /**
@@ -147,20 +124,34 @@ class Game
         );
 
         // Filter out the walking dead
+        $priorityList = [];
         foreach ($this->humans->list() as $human) {
             $id = $human->getId();
 
             $ttl = $timeToLive[$id] ?? -1;
             $tts = $timeToSave[$id] ?? -1;
 
-            if ($ttl < $tts || $tts < 0) {
-                unset($timeToLive[$id]);
-                unset($timeToSave[$id]);
+            if ($ttl >= $tts && $tts >= 0) {
+                $priorityList[$id] = $ttl - $tts;
             }
         }
 
-        sort($timeToSave);
+        asort($priorityList);
 
-        return $timeToLive;
+        return $priorityList;
+    }
+
+    private function getTargetFromList(array $priorityList, EntityCollection $targets): Position
+    {
+        $min = min($priorityList);
+        $idSet = array_filter($priorityList, function ($priority) use ($min) {
+            return $min == $priority;
+        });
+
+        asort($idSet);
+
+        new Debug($targets->getType(), $humanIdSet);
+
+        return $targets->get(array_key_first($idSet))->getPosition();
     }
 }

@@ -4,8 +4,10 @@ namespace CodeInGame\CodeVsZombies;
 
 class Debug
 {
-    public function __construct($entity)
+    public function __construct(...$entity)
     {
-        error_log(print_r($entity, true));
+        foreach ($entity as $output) {
+            error_log(print_r($output, true));
+        }
     }
 }
