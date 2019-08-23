@@ -150,7 +150,7 @@ class Game
 
         asort($idSet);
 
-        new Debug($targets->getType(), $humanIdSet);
+        new Debug($targets->getType(), $idSet);
 
         return $targets->get(array_key_first($idSet))->getPosition();
     }
