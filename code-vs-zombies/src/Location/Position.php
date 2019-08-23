@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\CodeVsZombies\Entity;
+namespace CodeInGame\CodeVsZombies\Location;
 
 class Position
 {

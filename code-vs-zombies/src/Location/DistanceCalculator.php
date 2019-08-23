@@ -1,12 +1,11 @@
 <?php
 
-namespace CodeInGame\CodeVsZombies\Helper;
+namespace CodeInGame\CodeVsZombies\Location;
 
 use CodeInGame\CodeVsZombies\Debug;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
-use CodeInGame\CodeVsZombies\Entity\Position;
 
 class DistanceCalculator
 {

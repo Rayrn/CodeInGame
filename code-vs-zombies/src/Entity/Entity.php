@@ -2,6 +2,10 @@
 
 namespace CodeInGame\CodeVsZombies\Entity;
 
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Identifiable;
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Mappable;
+use CodeInGame\CodeVsZombies\Location\Position;
+
 abstract class Entity implements Identifiable, Mappable
 {
     /**

@@ -2,6 +2,9 @@
 
 namespace CodeInGame\CodeVsZombies\Entity;
 
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Moveable;
+use CodeInGame\CodeVsZombies\Location\Position;
+
 class Zombie extends Entity implements Moveable
 {
     /**

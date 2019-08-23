@@ -5,7 +5,7 @@ namespace CodeInGame\CodeVsZombies;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
-use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
+use CodeInGame\CodeVsZombies\Location\DistanceCalculator;
 
 $game = new Game(
     new StateReader(),

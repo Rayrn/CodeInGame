@@ -5,8 +5,8 @@ namespace CodeInGame\CodeVsZombies;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
-use CodeInGame\CodeVsZombies\Entity\Position;
-use CodeInGame\CodeVsZombies\Helper\DistanceCalculator;
+use CodeInGame\CodeVsZombies\Location\DistanceCalculator;
+use CodeInGame\CodeVsZombies\Location\Position;
 
 class Game
 {
@@ -144,13 +144,14 @@ class Game
     private function getTargetFromList(array $priorityList, EntityCollection $targets): Position
     {
         $min = min($priorityList);
+
         $idSet = array_filter($priorityList, function ($priority) use ($min) {
             return $min == $priority;
         });
 
         asort($idSet);
 
-        new Debug($targets->getType(), $idSet);
+        // new Debug($targets->getType(), $idSet);
 
         return $targets->get(array_key_first($idSet))->getPosition();
     }

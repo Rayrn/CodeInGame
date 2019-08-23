@@ -1,6 +1,8 @@
 <?php
 
-namespace CodeInGame\CodeVsZombies\Entity;
+namespace CodeInGame\CodeVsZombies\Entity\Interfaces;
+
+use CodeInGame\CodeVsZombies\Location\Position;
 
 interface Moveable
 {

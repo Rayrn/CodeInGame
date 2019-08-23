@@ -5,8 +5,8 @@ namespace CodeInGame\CodeVsZombies;
 use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
 use CodeInGame\CodeVsZombies\Entity\Human;
-use CodeInGame\CodeVsZombies\Entity\Position;
 use CodeInGame\CodeVsZombies\Entity\Zombie;
+use CodeInGame\CodeVsZombies\Location\Position;
 
 class StateReader
 {

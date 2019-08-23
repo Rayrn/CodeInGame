@@ -2,6 +2,9 @@
 
 namespace CodeInGame\CodeVsZombies\Entity;
 
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Identifiable;
+use CodeInGame\CodeVsZombies\Location\Position;
+
 class EntityCollection
 {
     /**

@@ -2,6 +2,9 @@
 
 namespace CodeInGame\CodeVsZombies\Entity;
 
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Mappable;
+use CodeInGame\CodeVsZombies\Location\Position;
+
 class Ash implements Mappable
 {
     /**
