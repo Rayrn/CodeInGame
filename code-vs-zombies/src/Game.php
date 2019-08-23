@@ -85,7 +85,10 @@ class Game
 
         $turnsToAct = $this->getTurnsToAct();
 
-        if (min($turnsToAct) == 0) {
+        new Debug($turnsToAct);
+
+        // Start acting at 1 or 0 so we don't go in the wrong direction
+        if (min($turnsToAct) < 2) {
             return $this->getTargetFromList($turnsToAct, $this->humans);
         }
 

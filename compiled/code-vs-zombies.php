@@ -532,7 +532,9 @@ class Game
             return $this->getFirstEntityPosition($this->humans);
         }
         $turnsToAct = $this->getTurnsToAct();
-        if (min($turnsToAct) == 0) {
+        new Debug($turnsToAct);
+        // Start acting at 1 or 0 so we don't go in the wrong direction
+        if (min($turnsToAct) < 2) {
             return $this->getTargetFromList($turnsToAct, $this->humans);
         }
         $turnsToKill = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->mappableToCollection($this->ash, $this->zombies), self::ASH_MOVEMENT, self::ASH_RANGE);
