@@ -54,6 +54,27 @@ class DistanceCalculator
     }
 
     /**
+     * Calculate the number of turns until an entity is interacted with
+     *
+     * @param array $distances
+     * @param int $movement
+     * @param int $range
+     * @return int[]
+     */
+    public function getTurnsToInteract(array $distances, int $movement, int $range): array
+    {
+        $turns = [];
+
+        foreach ($distances as $key => $distance) {
+            $turns[$key] = (int) ceil(
+                ($distance - $range) / $movement
+            );
+        }
+
+        return $turns;
+    }
+
+    /**
      * Find the central point for a collection of entities
      *
      * @param EntityCollection $collection
@@ -73,27 +94,6 @@ class DistanceCalculator
             $xSum / count($collection->list()),
             $ySum / count($collection->list())
         );
-    }
-
-    /**
-     * Calculate the number of turns until an entity is interacted with
-     *
-     * @param array $distances
-     * @param int $movement
-     * @param int $range
-     * @return int[]
-     */
-    public function getTurnsToInteract(array $distances, int $movement, int $range): array
-    {
-        $turns = [];
-
-        foreach ($distances as $key => $distance) {
-            $turns[$key] = (int) ceil(
-                ($distance - $range) / $movement
-            );
-        }
-
-        return $turns;
     }
 
     /**

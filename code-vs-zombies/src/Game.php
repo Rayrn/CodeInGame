@@ -63,7 +63,9 @@ class Game
      */
     public function updateState(): void
     {
-        $this->stateReader->updateState($this->ash, $this->humans, $this->zombies);
+        $response = $this->stateReader->updateState($this->ash, $this->humans, $this->zombies);
+
+        [$this->ash, $this->humans, $this->zombies] = $response;
     }
 
     /**
@@ -81,19 +83,19 @@ class Game
             return $this->getFirstEntityPosition($this->humans);
         }
 
-        $priorityList = $this->getPriority();
+        $turnsToAct = $this->getTurnsToAct();
 
-        $hitList = $this->distanceCalculator->getTurnsToInteract(
+        if (min($turnsToAct) == 0) {
+            $this->getTargetFromList($turnsToAct, $this->humans);
+        }
+
+        $turnsToKill = $this->distanceCalculator->getTurnsToInteract(
             $this->distanceCalculator->mappableToCollection($this->ash, $this->zombies),
             self::ASH_MOVEMENT,
             self::ASH_RANGE
         );
 
-        if (min($priorityList) > min($hitList)) {
-            return $this->getTargetFromList($hitList, $this->zombies);
-        }
-        
-        return $this->getTargetFromList($priorityList, $this->humans);
+        return $this->getTargetFromList($turnsToKill, $this->zombies);
     }
 
     /**
@@ -109,7 +111,12 @@ class Game
         return reset($entities)->getPosition();
     }
 
-    private function getPriority(): array
+    /**
+     * Calculate the number of turns until Ash has to run and save people
+     *
+     * @return array
+     */
+    private function getTurnsToAct(): array
     {
         $timeToLive = $this->distanceCalculator->getTurnsToInteract(
             $this->distanceCalculator->collectionToCollection($this->humans, $this->zombies),
@@ -123,7 +130,7 @@ class Game
             self::ASH_RANGE
         );
 
-        // Filter out the walking dead
+        // Filter out the walking dead and calculate time to act
         $priorityList = [];
         foreach ($this->humans->listEntities() as $human) {
             $id = $human->getId();
@@ -136,11 +143,19 @@ class Game
             }
         }
 
+        // Sort whilst preserving the keys (Entity ID)
         asort($priorityList);
 
         return $priorityList;
     }
 
+    /**
+     * Get the highest priority target from a list of entities
+     *
+     * @param array $list
+     * @param EntityCollection $targets
+     * @return Position
+     */
     private function getTargetFromList(array $list, EntityCollection $targets): Position
     {
         $min = min($list);

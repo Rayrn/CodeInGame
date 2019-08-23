@@ -16,23 +16,27 @@ class StateReader
      * @param Ash $ash
      * @param EntityCollection $humans
      * @param EntityCollection $zombies
-     * @return void
+     * @return array
      */
-    public function updateState(Ash $ash, EntityCollection $humans, EntityCollection $zombies): void
+    public function updateState(Ash $ash, EntityCollection $humans, EntityCollection $zombies): array
     {
-        $this->updateAshPosition($ash);
-        $this->updateHumanPositions($humans);
-        $this->updateZombiePositions($zombies);
+        $ash = $this->updateAshPosition($ash);
+        $humans = $this->updateHumanPositions($humans);
+        $zombies = $this->updateZombiePositions($zombies);
+
+        return [$ash, $humans, $zombies];
     }
 
-    private function updateAshPosition(Ash $ash): void
+    private function updateAshPosition(Ash $ash): Ash
     {
         fscanf(STDIN, "%d %d", $x, $y);
 
         $ash->setPosition(new Position($x, $y));
+
+        return $ash;
     }
 
-    private function updateHumanPositions(EntityCollection $humanEntityCollection): void
+    private function updateHumanPositions(EntityCollection $humanEntityCollection): EntityCollection
     {
         fscanf(STDIN, "%d", $humanCount);
 
@@ -47,9 +51,11 @@ class StateReader
         }
 
         $humanEntityCollection->setEntities(...$humans);
+
+        return $humanEntityCollection;
     }
 
-    private function updateZombiePositions(EntityCollection $zombieEntityCollection): void
+    private function updateZombiePositions(EntityCollection $zombieEntityCollection): EntityCollection
     {
         fscanf(STDIN, "%d", $zombieCount);
 
@@ -65,5 +71,7 @@ class StateReader
         }
 
         $zombieEntityCollection->setEntities(...$zombies);
+
+        return $zombieEntityCollection;
     }
 }

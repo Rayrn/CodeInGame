@@ -69,6 +69,22 @@ abstract class Entity implements Identifiable, Mappable, Sociable
      */
     protected $type;
     /**
+     * @var EntityCollection
+     */
+    protected $friendList;
+    /**
+     * @var array
+     */
+    protected $friendDistance;
+    /**
+     * @var EntityCollection
+     */
+    protected $enemyList;
+    /**
+     * @var array
+     */
+    protected $enemyDistance;
+    /**
      * Create a new instance of this entity
      *
      * @param string $type
@@ -129,15 +145,13 @@ abstract class Entity implements Identifiable, Mappable, Sociable
     public function lookForFriends(EntityCollection $collection) : void
     {
         if ($collection->getType() !== $this->type) {
-            throw new InvalidArgumentException("With friends like these... (Wrong entity: {$collection->getType()})");
+            throw new InvalidArgumentException("With friends like these... (entity: {$collection->getType()})");
         }
-        // Save friends list
         $this->friendList = $collection;
-        // Calculate distance
         $this->friendDistance = (new DistanceCalculator())->mappableToCollection($this, $collection);
     }
     /**
-     * Return a collection containing all friends who are close enough
+     * Return a collection containing all friends within a certain distance
      *
      * @param int $targetDistance
      * @return array
@@ -148,12 +162,53 @@ abstract class Entity implements Identifiable, Mappable, Sociable
         if ($this->friendList === null) {
             throw new Exception('You should probably try looking for friends before asking who is nearby...');
         }
-        $nearby = new EntityCollection($this->type);
-        foreach ($this->friendDistance as $id => $distance) {
+        return $this->filterColletionByDistance($this->friendList, $this->friendDistance, $targetDistance);
+    }
+    /**
+     * Calculate the distance between this entity and all other entites of the opposite type
+     *
+     * @param EntityCollection $collection
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function lookForEnemies(EntityCollection $collection) : void
+    {
+        if ($collection->getType() === $this->type) {
+            throw new InvalidArgumentException("These are your friends? (entity: {$collection->getType()})");
+        }
+        $this->enemyList = $collection;
+        $this->enemyDistance = (new DistanceCalculator())->mappableToCollection($this, $collection);
+    }
+    /**
+     * Return a collection containing all enemies within a certain distance
+     *
+     * @param int $targetDistance
+     * @return EntityCollection
+     * @throws Exception
+     */
+    public function listEnemiesInRange(int $targetDistance) : EntityCollection
+    {
+        if ($this->friendList === null) {
+            throw new Exception('If you think you\'re safe, try opening the curtains...');
+        }
+        return $this->filterColletionByDistance($this->enemyList, $this->enemyDistance, $targetDistance);
+    }
+    /**
+     * Return a new collection containing all entities within the target distance
+     *
+     * @param EntityCollection $collection
+     * @param array $distances
+     * @param int $targetDistance
+     * @return EntityCollection
+     */
+    protected function filterColletionByDistance(EntityCollection $collection, array $distances, int $targetDistance) : EntityCollection
+    {
+        $nearby = new EntityCollection($collection->getType());
+        foreach ($distances as $id => $distance) {
             if ($distance > $distance) {
                 continue;
             }
-            $nearby->addEntity($this->friendList->getEntity($id));
+            $nearby->addEntity($collection->getEntity($id));
         }
         return $nearby;
     }
@@ -347,13 +402,29 @@ interface Sociable
      */
     public function lookForFriends(EntityCollection $collection) : void;
     /**
-     * Return a collection containing all friends who are close enough
+     * Return a collection containing all friends within a certain distance
      *
      * @param int $targetDistance
      * @return EntityCollection
      * @throws Exception
      */
     public function listFriendsInRange(int $targetDistance) : EntityCollection;
+    /**
+     * Calculate the distance between this entity and all other entites of the opposite type
+     *
+     * @param EntityCollection $collection
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function lookForEnemies(EntityCollection $collection) : void;
+    /**
+     * Return a collection containing all enemies within a certain distance
+     *
+     * @param int $targetDistance
+     * @return EntityCollection
+     * @throws Exception
+     */
+    public function listEnemiesInRange(int $targetDistance) : EntityCollection;
 }
 }
 
@@ -444,7 +515,8 @@ class Game
      */
     public function updateState() : void
     {
-        $this->stateReader->updateState($this->ash, $this->humans, $this->zombies);
+        $response = $this->stateReader->updateState($this->ash, $this->humans, $this->zombies);
+        [$this->ash, $this->humans, $this->zombies] = $response;
     }
     /**
      * Get the next target position
@@ -459,12 +531,12 @@ class Game
         if (count($this->humans->listEntities()) == 1) {
             return $this->getFirstEntityPosition($this->humans);
         }
-        $priorityList = $this->getPriority();
-        $hitList = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->mappableToCollection($this->ash, $this->zombies), self::ASH_MOVEMENT, self::ASH_RANGE);
-        if (min($priorityList) > min($hitList)) {
-            return $this->getTargetFromList($hitList, $this->zombies);
+        $turnsToAct = $this->getTurnsToAct();
+        if (min($turnsToAct) == 0) {
+            $this->getTargetFromList($turnsToAct, $this->humans);
         }
-        return $this->getTargetFromList($priorityList, $this->humans);
+        $turnsToKill = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->mappableToCollection($this->ash, $this->zombies), self::ASH_MOVEMENT, self::ASH_RANGE);
+        return $this->getTargetFromList($turnsToKill, $this->zombies);
     }
     /**
      * Retreive the position of the first entity in the collection
@@ -477,11 +549,16 @@ class Game
         $entities = $collection->listEntities();
         return reset($entities)->getPosition();
     }
-    private function getPriority() : array
+    /**
+     * Calculate the number of turns until Ash has to run and save people
+     *
+     * @return array
+     */
+    private function getTurnsToAct() : array
     {
         $timeToLive = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->collectionToCollection($this->humans, $this->zombies), self::ZOMBIE_MOVEMENT, self::ZOMBIE_RANGE);
         $timeToSave = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->mappableToCollection($this->ash, $this->humans), self::ASH_MOVEMENT, self::ASH_RANGE);
-        // Filter out the walking dead
+        // Filter out the walking dead and calculate time to act
         $priorityList = [];
         foreach ($this->humans->listEntities() as $human) {
             $id = $human->getId();
@@ -491,9 +568,17 @@ class Game
                 $priorityList[$id] = $ttl - $tts;
             }
         }
+        // Sort whilst preserving the keys (Entity ID)
         asort($priorityList);
         return $priorityList;
     }
+    /**
+     * Get the highest priority target from a list of entities
+     *
+     * @param array $list
+     * @param EntityCollection $targets
+     * @return Position
+     */
     private function getTargetFromList(array $list, EntityCollection $targets) : Position
     {
         $min = min($list);
@@ -549,22 +634,6 @@ class DistanceCalculator
         return $entites;
     }
     /**
-     * Find the central point for a collection of entities
-     *
-     * @param EntityCollection $collection
-     * @return Position
-     */
-    public function findCentralPoint(EntityCollection $collection) : Position
-    {
-        $xSum = 0;
-        $ySum = 0;
-        foreach ($collection->list() as $entity) {
-            $xSum += $entity->getPosition()->getX();
-            $ySum += $entity->getPosition()->gety();
-        }
-        return new Position($xSum / count($collection->list()), $ySum / count($collection->list()));
-    }
-    /**
      * Calculate the number of turns until an entity is interacted with
      *
      * @param array $distances
@@ -579,6 +648,22 @@ class DistanceCalculator
             $turns[$key] = (int) ceil(($distance - $range) / $movement);
         }
         return $turns;
+    }
+    /**
+     * Find the central point for a collection of entities
+     *
+     * @param EntityCollection $collection
+     * @return Position
+     */
+    public function findCentralPoint(EntityCollection $collection) : Position
+    {
+        $xSum = 0;
+        $ySum = 0;
+        foreach ($collection->list() as $entity) {
+            $xSum += $entity->getPosition()->getX();
+            $ySum += $entity->getPosition()->gety();
+        }
+        return new Position($xSum / count($collection->list()), $ySum / count($collection->list()));
     }
     /**
      * Get the distance between two positions
@@ -694,20 +779,22 @@ class StateReader
      * @param Ash $ash
      * @param EntityCollection $humans
      * @param EntityCollection $zombies
-     * @return void
+     * @return array
      */
-    public function updateState(Ash $ash, EntityCollection $humans, EntityCollection $zombies) : void
+    public function updateState(Ash $ash, EntityCollection $humans, EntityCollection $zombies) : array
     {
-        $this->updateAshPosition($ash);
-        $this->updateHumanPositions($humans);
-        $this->updateZombiePositions($zombies);
+        $ash = $this->updateAshPosition($ash);
+        $humans = $this->updateHumanPositions($humans);
+        $zombies = $this->updateZombiePositions($zombies);
+        return [$ash, $humans, $zombies];
     }
-    private function updateAshPosition(Ash $ash) : void
+    private function updateAshPosition(Ash $ash) : Ash
     {
         fscanf(STDIN, "%d %d", $x, $y);
         $ash->setPosition(new Position($x, $y));
+        return $ash;
     }
-    private function updateHumanPositions(EntityCollection $humanEntityCollection) : void
+    private function updateHumanPositions(EntityCollection $humanEntityCollection) : EntityCollection
     {
         fscanf(STDIN, "%d", $humanCount);
         $humans = [];
@@ -718,8 +805,9 @@ class StateReader
             $humans[] = $human;
         }
         $humanEntityCollection->setEntities(...$humans);
+        return $humanEntityCollection;
     }
-    private function updateZombiePositions(EntityCollection $zombieEntityCollection) : void
+    private function updateZombiePositions(EntityCollection $zombieEntityCollection) : EntityCollection
     {
         fscanf(STDIN, "%d", $zombieCount);
         $zombies = [];
@@ -731,6 +819,7 @@ class StateReader
             $zombies[] = $zombie;
         }
         $zombieEntityCollection->setEntities(...$zombies);
+        return $zombieEntityCollection;
     }
 }
 }

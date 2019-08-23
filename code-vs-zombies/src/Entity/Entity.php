@@ -33,6 +33,26 @@ abstract class Entity implements Identifiable, Mappable, Sociable
     protected $type;
 
     /**
+     * @var EntityCollection
+     */
+    protected $friendList;
+
+    /**
+     * @var array
+     */
+    protected $friendDistance;
+
+    /**
+     * @var EntityCollection
+     */
+    protected $enemyList;
+
+    /**
+     * @var array
+     */
+    protected $enemyDistance;
+
+    /**
      * Create a new instance of this entity
      *
      * @param string $type
@@ -99,18 +119,15 @@ abstract class Entity implements Identifiable, Mappable, Sociable
     public function lookForFriends(EntityCollection $collection): void
     {
         if ($collection->getType() !== $this->type) {
-            throw new InvalidArgumentException("With friends like these... (Wrong entity: {$collection->getType()})");
+            throw new InvalidArgumentException("With friends like these... (entity: {$collection->getType()})");
         }
 
-        // Save friends list
         $this->friendList = $collection;
-
-        // Calculate distance
         $this->friendDistance = (new DistanceCalculator())->mappableToCollection($this, $collection);
     }
 
     /**
-     * Return a collection containing all friends who are close enough
+     * Return a collection containing all friends within a certain distance
      *
      * @param int $targetDistance
      * @return array
@@ -122,14 +139,63 @@ abstract class Entity implements Identifiable, Mappable, Sociable
             throw new Exception('You should probably try looking for friends before asking who is nearby...');
         }
 
-        $nearby = new EntityCollection($this->type);
+        return $this->filterColletionByDistance($this->friendList, $this->friendDistance, $targetDistance);
+    }
 
-        foreach ($this->friendDistance as $id => $distance) {
+    /**
+     * Calculate the distance between this entity and all other entites of the opposite type
+     *
+     * @param EntityCollection $collection
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function lookForEnemies(EntityCollection $collection): void
+    {
+        if ($collection->getType() === $this->type) {
+            throw new InvalidArgumentException("These are your friends? (entity: {$collection->getType()})");
+        }
+
+        $this->enemyList = $collection;
+        $this->enemyDistance = (new DistanceCalculator())->mappableToCollection($this, $collection);
+    }
+
+    /**
+     * Return a collection containing all enemies within a certain distance
+     *
+     * @param int $targetDistance
+     * @return EntityCollection
+     * @throws Exception
+     */
+    public function listEnemiesInRange(int $targetDistance): EntityCollection
+    {
+        if ($this->friendList === null) {
+            throw new Exception('If you think you\'re safe, try opening the curtains...');
+        }
+
+        return $this->filterColletionByDistance($this->enemyList, $this->enemyDistance, $targetDistance);
+    }
+
+    /**
+     * Return a new collection containing all entities within the target distance
+     *
+     * @param EntityCollection $collection
+     * @param array $distances
+     * @param int $targetDistance
+     * @return EntityCollection
+     */
+    protected function filterColletionByDistance(
+        EntityCollection $collection,
+        array $distances,
+        int $targetDistance
+    ): EntityCollection {
+        $nearby = new EntityCollection($collection->getType());
+
+        foreach ($distances as $id => $distance) {
             if ($distance > $distance) {
                 continue;
             }
 
-            $nearby->addEntity($this->friendList->getEntity($id));
+            $nearby->addEntity($collection->getEntity($id));
         }
 
         return $nearby;
