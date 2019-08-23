@@ -3,25 +3,25 @@
 namespace CodeInGame\CodeVsZombies\Location;
 
 use CodeInGame\CodeVsZombies\Debug;
-use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Mappable;
 
 class DistanceCalculator
 {
     /**
-     * Calculate distance between Ash and a set of Entities
+     * Calculate distance between a mappable object and a set of Entities
      *
-     * @param Ash $ash
+     * @param Mappable $mappable
      * @param EntityCollection $collection
      * @return int[]
      */
-    public function ashToCollection(Ash $ash, EntityCollection $collection): array
+    public function mappableToCollection(Mappable $mappable, EntityCollection $collection): array
     {
         $entites = [];
-        foreach ($collection->list() as $entity) {
+        foreach ($collection->listEntities() as $entity) {
             $entites[$entity->getId()] = intval($this->getDistance(
-                $ash->getPosition(),
+                $mappable->getPosition(),
                 $entity->getPosition()
             ));
         }
@@ -39,7 +39,7 @@ class DistanceCalculator
     public function collectionToCollection(EntityCollection $collectionA, EntityCollection $collectionB): array
     {
         $entites = [];
-        foreach ($collectionA->list() as $entity) {
+        foreach ($collectionA->listEntities() as $entity) {
             $nearest = $this->getNearestEntity($entity->getPosition(), $collectionB);
 
             if (is_null($nearest)) {
@@ -51,6 +51,28 @@ class DistanceCalculator
         }
 
         return $entites;
+    }
+
+    /**
+     * Find the central point for a collection of entities
+     *
+     * @param EntityCollection $collection
+     * @return Position
+     */
+    public function findCentralPoint(EntityCollection $collection): Position
+    {
+        $xSum = 0;
+        $ySum = 0;
+
+        foreach ($collection->list() as $entity) {
+            $xSum += $entity->getPosition()->getX();
+            $ySum += $entity->getPosition()->gety();
+        }
+
+        return new Position(
+            $xSum / count($collection->list()),
+            $ySum / count($collection->list())
+        );
     }
 
     /**
@@ -101,7 +123,7 @@ class DistanceCalculator
         $minDistance = null;
         $nearest = null;
 
-        foreach ($collection->list() as $entity) {
+        foreach ($collection->listEntities() as $entity) {
             $distance = $this->getDistance($position, $entity->getPosition());
 
             if ($distance < $minDistance || is_null($minDistance)) {

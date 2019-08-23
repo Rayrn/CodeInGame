@@ -33,22 +33,13 @@ class EntityCollection
     }
 
     /**
-     * Overwrite the Entity list. Only saves Entities of the same $type as the Entity Collection
+     * Get the collection type
      *
-     * @param ...Entity $entities
-     * @return void
+     * @return strings
      */
-    public function setEntities(Identifiable ...$entities): void
+    public function getType(): string
     {
-        $this->entities = [];
-
-        foreach ($entities as $entity) {
-            if ($entity->getType() !== $this->type) {
-                continue;
-            }
-
-            $this->entities[] = $entity;
-        }
+        return $this->type;
     }
 
     /**
@@ -57,7 +48,7 @@ class EntityCollection
      * @param int $id
      * @return Entity
      */
-    public function get(int $id): ?Entity
+    public function getEntity(int $id): ?Entity
     {
         foreach ($this->entities as $entity) {
             if ($entity->getId() == $id) {
@@ -69,13 +60,31 @@ class EntityCollection
     }
 
     /**
-     * Get the collection type
+     * Add a new entity to the Entity list. Only saves Entities of the same $type as the Entity Collection
      *
-     * @return strings
+     * @param Identifiable|null $entity
+     * @return void
      */
-    public function getType(): string
+    public function addEntity(?Identifiable $entity): void
     {
-        return $this->type;
+        if ($entity !== null && $entity->getType() == $this->type) {
+            $this->entities[] = $entity;
+        }
+    }
+
+    /**
+     * Overwrite the Entity list. Only saves Entities of the same $type as the Entity Collection
+     *
+     * @param ...Entity $entities
+     * @return void
+     */
+    public function setEntities(Identifiable ...$entities): void
+    {
+        $this->entities = [];
+
+        foreach ($entities as $entity) {
+            $this->addEntity($entity);
+        }
     }
 
     /**
@@ -83,7 +92,7 @@ class EntityCollection
      *
      * @return array
      */
-    public function list(): array
+    public function listEntities(): array
     {
         return $this->entities;
     }
@@ -94,7 +103,7 @@ class EntityCollection
      * @param int $id
      * @return void
      */
-    public function remove(int $id): void
+    public function removeEntity(int $id): void
     {
         foreach ($this->entities as $key => $entity) {
             if ($entity->getId() == $id) {

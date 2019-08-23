@@ -53,7 +53,7 @@ class Game
         $this->humans = $humans;
         $this->zombies = $zombies;
 
-        $this->distanceCalculator = new DistanceCalculator();
+        $this->distanceCalculator = $distanceCalculator;
     }
 
     /**
@@ -73,18 +73,18 @@ class Game
      */
     public function getAction(): Position
     {
-        if (count($this->zombies->list()) == 1) {
+        if (count($this->zombies->listEntities()) == 1) {
             return $this->getFirstEntityPosition($this->zombies);
         }
 
-        if (count($this->humans->list()) == 1) {
+        if (count($this->humans->listEntities()) == 1) {
             return $this->getFirstEntityPosition($this->humans);
         }
 
         $priorityList = $this->getPriority();
 
         $hitList = $this->distanceCalculator->getTurnsToInteract(
-            $this->distanceCalculator->ashToCollection($this->ash, $this->zombies),
+            $this->distanceCalculator->mappableToCollection($this->ash, $this->zombies),
             self::ASH_MOVEMENT,
             self::ASH_RANGE
         );
@@ -104,7 +104,7 @@ class Game
      */
     private function getFirstEntityPosition(EntityCollection $collection): Position
     {
-        $entities = $collection->list();
+        $entities = $collection->listEntities();
 
         return reset($entities)->getPosition();
     }
@@ -118,14 +118,14 @@ class Game
         );
 
         $timeToSave = $this->distanceCalculator->getTurnsToInteract(
-            $this->distanceCalculator->ashToCollection($this->ash, $this->humans),
+            $this->distanceCalculator->mappableToCollection($this->ash, $this->humans),
             self::ASH_MOVEMENT,
             self::ASH_RANGE
         );
 
         // Filter out the walking dead
         $priorityList = [];
-        foreach ($this->humans->list() as $human) {
+        foreach ($this->humans->listEntities() as $human) {
             $id = $human->getId();
 
             $ttl = $timeToLive[$id] ?? -1;
@@ -151,8 +151,6 @@ class Game
 
         asort($idSet);
 
-        // new Debug($targets->getType(), $idSet);
-
-        return $targets->get(array_key_first($idSet))->getPosition();
+        return $targets->getEntity(array_key_first($idSet))->getPosition();
     }
 }

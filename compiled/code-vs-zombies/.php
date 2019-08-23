@@ -45,8 +45,10 @@ class Ash implements Mappable
 namespace CodeInGame\CodeVsZombies\Entity {
 use CodeInGame\CodeVsZombies\Entity\Interfaces\Identifiable;
 use CodeInGame\CodeVsZombies\Entity\Interfaces\Mappable;
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Sociable;
+use CodeInGame\CodeVsZombies\Location\DistanceCalculator;
 use CodeInGame\CodeVsZombies\Location\Position;
-abstract class Entity implements Identifiable, Mappable
+abstract class Entity implements Identifiable, Mappable, Sociable
 {
     /**
      * List of valid Entity types
@@ -66,6 +68,12 @@ abstract class Entity implements Identifiable, Mappable
      * @var string
      */
     protected $type;
+    /**
+     * Create a new instance of this entity
+     *
+     * @param string $type
+     * @param int $id
+     */
     public function __construct(string $type, int $id)
     {
         if (!in_array($type, self::VALID_TYPES)) {
@@ -111,6 +119,44 @@ abstract class Entity implements Identifiable, Mappable
     {
         return $this->position;
     }
+    /**
+     * Calculate the distance between this entity and all other entites of the same type
+     *
+     * @param EntityCollection $collection
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function lookForFriends(EntityCollection $collection) : void
+    {
+        if ($collection->getType() !== $this->type) {
+            throw new InvalidArgumentException("With friends like these... (Wrong entity: {$collection->getType()})");
+        }
+        // Save friends list
+        $this->friendList = $collection;
+        // Calculate distance
+        $this->friendDistance = (new DistanceCalculator())->mappableToCollection($this, $collection);
+    }
+    /**
+     * Return a collection containing all friends who are close enough
+     *
+     * @param int $targetDistance
+     * @return array
+     * @throws Exception
+     */
+    public function listFriendsInRange(int $targetDistance) : EntityCollection
+    {
+        if ($this->friendList === null) {
+            throw new Exception('You should probably try looking for friends before asking who is nearby...');
+        }
+        $nearby = new EntityCollection($this->type);
+        foreach ($this->friendDistance as $id => $distance) {
+            if ($distance > $distance) {
+                continue;
+            }
+            $nearby->addEntity($this->friendList->getEntity($id));
+        }
+        return $nearby;
+    }
 }
 }
 
@@ -141,37 +187,6 @@ class EntityCollection
         $this->entities = [];
     }
     /**
-     * Overwrite the Entity list. Only saves Entities of the same $type as the Entity Collection
-     *
-     * @param ...Entity $entities
-     * @return void
-     */
-    public function setEntities(Identifiable ...$entities) : void
-    {
-        $this->entities = [];
-        foreach ($entities as $entity) {
-            if ($entity->getType() !== $this->type) {
-                continue;
-            }
-            $this->entities[] = $entity;
-        }
-    }
-    /**
-     * Get an Entity from the list
-     *
-     * @param int $id
-     * @return Entity
-     */
-    public function get(int $id) : ?Entity
-    {
-        foreach ($this->entities as $entity) {
-            if ($entity->getId() == $id) {
-                return $entity;
-            }
-        }
-        return null;
-    }
-    /**
      * Get the collection type
      *
      * @return strings
@@ -181,11 +196,51 @@ class EntityCollection
         return $this->type;
     }
     /**
+     * Get an Entity from the list
+     *
+     * @param int $id
+     * @return Entity
+     */
+    public function getEntity(int $id) : ?Entity
+    {
+        foreach ($this->entities as $entity) {
+            if ($entity->getId() == $id) {
+                return $entity;
+            }
+        }
+        return null;
+    }
+    /**
+     * Add a new entity to the Entity list. Only saves Entities of the same $type as the Entity Collection
+     *
+     * @param Identifiable|null $entity
+     * @return void
+     */
+    public function addEntity(?Identifiable $entity) : void
+    {
+        if ($entity !== null && $entity->getType() == $this->type) {
+            $this->entities[] = $entity;
+        }
+    }
+    /**
+     * Overwrite the Entity list. Only saves Entities of the same $type as the Entity Collection
+     *
+     * @param ...Entity $entities
+     * @return void
+     */
+    public function setEntities(Identifiable ...$entities) : void
+    {
+        $this->entities = [];
+        foreach ($entities as $entity) {
+            $this->addEntity($entity);
+        }
+    }
+    /**
      * Get a list of Entities
      *
      * @return array
      */
-    public function list() : array
+    public function listEntities() : array
     {
         return $this->entities;
     }
@@ -195,7 +250,7 @@ class EntityCollection
      * @param int $id
      * @return void
      */
-    public function remove(int $id) : void
+    public function removeEntity(int $id) : void
     {
         foreach ($this->entities as $key => $entity) {
             if ($entity->getId() == $id) {
@@ -279,6 +334,29 @@ interface Moveable
 }
 }
 
+namespace CodeInGame\CodeVsZombies\Entity\Interfaces {
+use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+interface Sociable
+{
+    /**
+     * Calculate the distance between this entity and all other entites of the same type
+     *
+     * @param EntityCollection $collection
+     * @return void
+     * @throws InvalidArgumentException
+     */
+    public function lookForFriends(EntityCollection $collection) : void;
+    /**
+     * Return a collection containing all friends who are close enough
+     *
+     * @param int $targetDistance
+     * @return EntityCollection
+     * @throws Exception
+     */
+    public function listFriendsInRange(int $targetDistance) : EntityCollection;
+}
+}
+
 namespace CodeInGame\CodeVsZombies\Entity {
 use CodeInGame\CodeVsZombies\Entity\Interfaces\Moveable;
 use CodeInGame\CodeVsZombies\Location\Position;
@@ -357,7 +435,7 @@ class Game
         $this->ash = $ash;
         $this->humans = $humans;
         $this->zombies = $zombies;
-        $this->distanceCalculator = new DistanceCalculator();
+        $this->distanceCalculator = $distanceCalculator;
     }
     /**
      * Update the game state
@@ -375,14 +453,14 @@ class Game
      */
     public function getAction() : Position
     {
-        if (count($this->zombies->list()) == 1) {
+        if (count($this->zombies->listEntities()) == 1) {
             return $this->getFirstEntityPosition($this->zombies);
         }
-        if (count($this->humans->list()) == 1) {
+        if (count($this->humans->listEntities()) == 1) {
             return $this->getFirstEntityPosition($this->humans);
         }
         $priorityList = $this->getPriority();
-        $hitList = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->ashToCollection($this->ash, $this->zombies), self::ASH_MOVEMENT, self::ASH_RANGE);
+        $hitList = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->mappableToCollection($this->ash, $this->zombies), self::ASH_MOVEMENT, self::ASH_RANGE);
         if (min($priorityList) > min($hitList)) {
             return $this->getTargetFromList($hitList, $this->zombies);
         }
@@ -396,16 +474,16 @@ class Game
      */
     private function getFirstEntityPosition(EntityCollection $collection) : Position
     {
-        $entities = $collection->list();
+        $entities = $collection->listEntities();
         return reset($entities)->getPosition();
     }
     private function getPriority() : array
     {
         $timeToLive = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->collectionToCollection($this->humans, $this->zombies), self::ZOMBIE_MOVEMENT, self::ZOMBIE_RANGE);
-        $timeToSave = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->ashToCollection($this->ash, $this->humans), self::ASH_MOVEMENT, self::ASH_RANGE);
+        $timeToSave = $this->distanceCalculator->getTurnsToInteract($this->distanceCalculator->mappableToCollection($this->ash, $this->humans), self::ASH_MOVEMENT, self::ASH_RANGE);
         // Filter out the walking dead
         $priorityList = [];
-        foreach ($this->humans->list() as $human) {
+        foreach ($this->humans->listEntities() as $human) {
             $id = $human->getId();
             $ttl = $timeToLive[$id] ?? -1;
             $tts = $timeToSave[$id] ?? -1;
@@ -423,31 +501,30 @@ class Game
             return $min == $priority;
         });
         asort($idSet);
-        // new Debug($targets->getType(), $idSet);
-        return $targets->get(array_key_first($idSet))->getPosition();
+        return $targets->getEntity(array_key_first($idSet))->getPosition();
     }
 }
 }
 
 namespace CodeInGame\CodeVsZombies\Location {
 use CodeInGame\CodeVsZombies\Debug;
-use CodeInGame\CodeVsZombies\Entity\Ash;
 use CodeInGame\CodeVsZombies\Entity\Entity;
 use CodeInGame\CodeVsZombies\Entity\EntityCollection;
+use CodeInGame\CodeVsZombies\Entity\Interfaces\Mappable;
 class DistanceCalculator
 {
     /**
-     * Calculate distance between Ash and a set of Entities
+     * Calculate distance between a mappable object and a set of Entities
      *
-     * @param Ash $ash
+     * @param Mappable $mappable
      * @param EntityCollection $collection
      * @return int[]
      */
-    public function ashToCollection(Ash $ash, EntityCollection $collection) : array
+    public function mappableToCollection(Mappable $mappable, EntityCollection $collection) : array
     {
         $entites = [];
-        foreach ($collection->list() as $entity) {
-            $entites[$entity->getId()] = intval($this->getDistance($ash->getPosition(), $entity->getPosition()));
+        foreach ($collection->listEntities() as $entity) {
+            $entites[$entity->getId()] = intval($this->getDistance($mappable->getPosition(), $entity->getPosition()));
         }
         return $entites;
     }
@@ -461,7 +538,7 @@ class DistanceCalculator
     public function collectionToCollection(EntityCollection $collectionA, EntityCollection $collectionB) : array
     {
         $entites = [];
-        foreach ($collectionA->list() as $entity) {
+        foreach ($collectionA->listEntities() as $entity) {
             $nearest = $this->getNearestEntity($entity->getPosition(), $collectionB);
             if (is_null($nearest)) {
                 // If null is returned then the second entity collection was empty. Skip.
@@ -470,6 +547,22 @@ class DistanceCalculator
             $entites[$entity->getId()] = intval($this->getDistance($entity->getPosition(), $nearest->getPosition()));
         }
         return $entites;
+    }
+    /**
+     * Find the central point for a collection of entities
+     *
+     * @param EntityCollection $collection
+     * @return Position
+     */
+    public function findCentralPoint(EntityCollection $collection) : Position
+    {
+        $xSum = 0;
+        $ySum = 0;
+        foreach ($collection->list() as $entity) {
+            $xSum += $entity->getPosition()->getX();
+            $ySum += $entity->getPosition()->gety();
+        }
+        return new Position($xSum / count($collection->list()), $ySum / count($collection->list()));
     }
     /**
      * Calculate the number of turns until an entity is interacted with
@@ -511,7 +604,7 @@ class DistanceCalculator
     {
         $minDistance = null;
         $nearest = null;
-        foreach ($collection->list() as $entity) {
+        foreach ($collection->listEntities() as $entity) {
             $distance = $this->getDistance($position, $entity->getPosition());
             if ($distance < $minDistance || is_null($minDistance)) {
                 $minDistance = $distance;
