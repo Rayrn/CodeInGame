@@ -10,4 +10,11 @@ interface Identifiable
      * @return int
      */
     public function getId(): int;
+
+    /**
+     * Get the Entity type
+     *
+     * @return string
+     */
+    public function getType(): string;
 }

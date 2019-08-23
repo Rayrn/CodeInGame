@@ -41,16 +41,6 @@ abstract class Entity implements Identifiable, Mappable
     }
 
     /**
-     * Get the Entity type
-     *
-     * @return string
-     */
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    /**
      * Get the Entity ID
      *
      * @return int
@@ -58,6 +48,16 @@ abstract class Entity implements Identifiable, Mappable
     public function getId(): int
     {
         return $this->id;
+    }
+
+    /**
+     * Get the Entity type
+     *
+     * @return string
+     */
+    public function getType(): string
+    {
+        return $this->type;
     }
 
     /**

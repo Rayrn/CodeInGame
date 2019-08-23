@@ -141,11 +141,11 @@ class Game
         return $priorityList;
     }
 
-    private function getTargetFromList(array $priorityList, EntityCollection $targets): Position
+    private function getTargetFromList(array $list, EntityCollection $targets): Position
     {
-        $min = min($priorityList);
+        $min = min($list);
 
-        $idSet = array_filter($priorityList, function ($priority) use ($min) {
+        $idSet = array_filter($list, function ($priority) use ($min) {
             return $min == $priority;
         });
 

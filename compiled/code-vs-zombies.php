@@ -75,15 +75,6 @@ abstract class Entity implements Identifiable, Mappable
         $this->type = $type;
     }
     /**
-     * Get the Entity type
-     *
-     * @return string
-     */
-    public function getType() : string
-    {
-        return $this->type;
-    }
-    /**
      * Get the Entity ID
      *
      * @return int
@@ -91,6 +82,15 @@ abstract class Entity implements Identifiable, Mappable
     public function getId() : int
     {
         return $this->id;
+    }
+    /**
+     * Get the Entity type
+     *
+     * @return string
+     */
+    public function getType() : string
+    {
+        return $this->type;
     }
     /**
      * Set the Position for the Entity
@@ -230,6 +230,12 @@ interface Identifiable
      * @return int
      */
     public function getId() : int;
+    /**
+     * Get the Entity type
+     *
+     * @return string
+     */
+    public function getType() : string;
 }
 }
 
@@ -410,10 +416,10 @@ class Game
         asort($priorityList);
         return $priorityList;
     }
-    private function getTargetFromList(array $priorityList, EntityCollection $targets) : Position
+    private function getTargetFromList(array $list, EntityCollection $targets) : Position
     {
-        $min = min($priorityList);
-        $idSet = array_filter($priorityList, function ($priority) use($min) {
+        $min = min($list);
+        $idSet = array_filter($list, function ($priority) use($min) {
             return $min == $priority;
         });
         asort($idSet);
