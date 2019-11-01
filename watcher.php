@@ -14,7 +14,7 @@ echo "Watching $filepath\n";
 $watcher = new Watcher(new Tracker(), new Filesystem());
 $listener = $watcher->watch($filepath);
 
-$listener->anything(function() use ($base) {
+$listener->anything(function () use ($base) {
     runCompiler("$base/mapper.php", "compiled/$base.php");
 });
 
@@ -27,5 +27,5 @@ function loadFilepath(string $relativeFilepath): string
 
 function runCompiler(string $mapperLocation, string $outputLocation): void
 {
-    shell_exec("sh vendor/bin/classpreloader.php compile --config {$mapperLocation} --output $outputLocation");
+    shell_exec("vendor/bin/classpreloader.php compile --config {$mapperLocation} --output $outputLocation");
 }

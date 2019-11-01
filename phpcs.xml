@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ruleset name="PHP_CodeSniffer">
+    <!-- Config -->
+    <arg name="basepath" value="."/>
+    <arg name="cache" value=".phpcs-cache"/>
+    <arg name="colors"/>
+    <arg name="extensions" value="php"/>
+
+    <!-- Directories to scan -->
+    <file>code-vs-zomies/</file>
+    <file>legends-of-code-magic/</file>
+    <file>standalone/</file>
+
+    <!-- PSR-2 Coding Style -->
+    <rule ref="PSR2" />
+
+    <!-- PSR-12 Extended Coding Style -->
+    <rule ref="PSR12" />
+</ruleset>
