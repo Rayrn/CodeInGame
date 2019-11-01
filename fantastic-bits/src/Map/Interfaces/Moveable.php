@@ -2,7 +2,7 @@
 
 namespace CodeInGame\FantasticBits\Map\Interfaces;
 
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 
 interface Moveable
 {

@@ -2,7 +2,7 @@
 
 namespace CodeInGame\FantasticBits\Map\Entity;
 
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
 use CodeInGame\FantasticBits\Map\Interfaces\Moveable;

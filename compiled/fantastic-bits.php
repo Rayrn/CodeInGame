@@ -12,7 +12,7 @@ class Debug
 }
 
 namespace CodeInGame\FantasticBits {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Component\Goal;
 class Game
@@ -76,15 +76,130 @@ class Game
 }
 }
 
+namespace CodeInGame\FantasticBits\Location {
+class DistanceCalculator
+{
+    /**
+     * Get the distance between two positions
+     *
+     * @param Position $positionA
+     * @param Position $positionB
+     * @return int
+     */
+    private function getDistance(Position $positionA, Position $positionB) : int
+    {
+        $x = abs($positionA->getX() - $positionB->getX());
+        $y = abs($positionA->gety() - $positionB->gety());
+        return (int) sqrt($x * $x + $y * $y);
+    }
+    /**
+     * Get the nearest entity to a position
+     *
+     * @param Position $position
+     * @param EntityCollection $collection
+     * @return ?Entity
+     */
+    private function getNearestEntity(Position $position, EntityCollection $collection) : ?Entity
+    {
+        $minDistance = null;
+        $nearest = null;
+        foreach ($collection->listEntities() as $entity) {
+            $distance = $this->getDistance($position, $entity->getPosition());
+            if ($distance < $minDistance || is_null($minDistance)) {
+                $minDistance = $distance;
+                $nearest = $entity;
+            }
+        }
+        return $nearest;
+    }
+}
+}
+
+namespace CodeInGame\FantasticBits\Location {
+class Position
+{
+    /**
+     * @var int
+     */
+    private $x;
+    /**
+     * @var int
+     */
+    private $y;
+    /**
+     * Create a new Position
+     *
+     * @param int $id;
+     */
+    public function __construct(int $x, int $y)
+    {
+        $this->x = $x;
+        $this->y = $y;
+    }
+    /**
+     * Outputs a representation of the object as a string
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->x . ' ' . $this->y;
+    }
+    /**
+     * Get the X position
+     *
+     * @return int
+     */
+    public function getX() : int
+    {
+        return $this->x;
+    }
+    /**
+     * Get the Y position
+     *
+     * @return int
+     */
+    public function getY() : int
+    {
+        return $this->y;
+    }
+}
+}
+
 namespace CodeInGame\FantasticBits\Map\Component {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 class Goal
 {
     private const GOAL_WIDTH = 4000;
+    /**
+     * @var Position
+     */
+    private $centre;
+    /**
+     * @var GoalPost
+     */
+    private $northPost;
+    /**
+     * @var GoalPost
+     */
+    private $southPost;
     public function __construct(Position $position)
     {
+        $this->centre = $position;
         $this->northPost = $this->getNorthPost($position);
         $this->southPost = $this->getSouthPost($position);
+    }
+    public function getGoalTop() : int
+    {
+        return $this->northPost->getY() - $this->northPost->getRadius() / 2;
+    }
+    public function getGoalCentre() : int
+    {
+        return $this->centre->getPosition();
+    }
+    public function getGoalBottom() : int
+    {
+        return $this->southPost->getY() + $this->northPost->getRadius() / 2;
     }
     private function getNorthPost(Position $position) : GoalPost
     {
@@ -100,7 +215,7 @@ class Goal
 }
 
 namespace CodeInGame\FantasticBits\Map\Component {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
 class Goalpost implements Mappable
 {
@@ -130,7 +245,7 @@ class Goalpost implements Mappable
 }
 
 namespace CodeInGame\FantasticBits\Map\Entity {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
 use CodeInGame\FantasticBits\Map\Interfaces\Moveable;
@@ -188,7 +303,49 @@ abstract class AbstractEntity implements Identifiable, Mappable, Moveable
 }
 
 namespace CodeInGame\FantasticBits\Map\Entity {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
+use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
+use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
+use CodeInGame\FantasticBits\Map\Interfaces\Moveable;
+class EntityCollection
+{
+    /**
+     * @var string
+     */
+    private $entityType;
+    /**
+     * @var AbstractEntity[]
+     */
+    private $collection;
+    public function get(int $id) : ?AbstractEntity
+    {
+        foreach ($this->collection as $entity) {
+            if ($entity->getId() == $id) {
+                return $entity;
+            }
+        }
+        return null;
+    }
+    public function list() : array
+    {
+        return $this->collection;
+    }
+    public function set(AbstractEntity ...$collection) : void
+    {
+        $this->collection = [];
+        $this->entityType = get_class(reset($collection));
+        foreach ($collection as $entity) {
+            if ($this->entityType !== get_class($entity)) {
+                throw new InvalidArgumentException('A collection may only contain one type of entity');
+            }
+            $this->collection[$entity->getId()] = $entity;
+        }
+    }
+}
+}
+
+namespace CodeInGame\FantasticBits\Map\Entity {
+use CodeInGame\FantasticBits\Location\Position;
 class Snaffle extends AbstractEntity
 {
     private const RADIUS = 150;
@@ -200,7 +357,7 @@ class Snaffle extends AbstractEntity
 }
 
 namespace CodeInGame\FantasticBits\Map\Entity {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 class Wizard extends AbstractEntity
 {
     private const RADIUS = 400;
@@ -227,7 +384,7 @@ interface Identifiable
 }
 
 namespace CodeInGame\FantasticBits\Map\Interfaces {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 interface Mappable
 {
     public function getPosition() : Position;
@@ -236,7 +393,7 @@ interface Mappable
 }
 
 namespace CodeInGame\FantasticBits\Map\Interfaces {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 interface Moveable
 {
     public function getHeading() : Position;
@@ -247,57 +404,6 @@ namespace CodeInGame\FantasticBits\Map\Interfaces {
 interface hasState
 {
     public function getState() : bool;
-}
-}
-
-namespace CodeInGame\FantasticBits\Map {
-class Position
-{
-    /**
-     * @var int
-     */
-    private $x;
-    /**
-     * @var int
-     */
-    private $y;
-    /**
-     * Create a new Position
-     *
-     * @param int $id;
-     */
-    public function __construct(int $x, int $y)
-    {
-        $this->x = $x;
-        $this->y = $y;
-    }
-    /**
-     * Outputs a representation of the object as a string
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->x . ' ' . $this->y;
-    }
-    /**
-     * Get the X position
-     *
-     * @return int
-     */
-    public function getX() : int
-    {
-        return $this->x;
-    }
-    /**
-     * Get the Y position
-     *
-     * @return int
-     */
-    public function getY() : int
-    {
-        return $this->y;
-    }
 }
 }
 
@@ -367,7 +473,7 @@ while (true) {
 }
 
 namespace CodeInGame\FantasticBits {
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
 use CodeInGame\FantasticBits\Map\Entity\Snaffle;

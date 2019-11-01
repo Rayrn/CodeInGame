@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\FantasticBits\Map;
+namespace CodeInGame\FantasticBits\Location;
 
 class Position
 {

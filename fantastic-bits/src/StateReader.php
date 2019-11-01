@@ -2,7 +2,7 @@
 
 namespace CodeInGame\FantasticBits;
 
-use CodeInGame\FantasticBits\Map\Position;
+use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
 use CodeInGame\FantasticBits\Map\Entity\Snaffle;
