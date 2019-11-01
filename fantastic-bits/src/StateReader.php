@@ -34,10 +34,10 @@ class StateReader
         [$snaffles, $myPlayers, $oppPlayers] = $this->getEntityList();
 
         $myTeam = new Team(0, $myMagic, $myScore);
-        $myTeam->setWizards($myPlayers);
+        $myTeam->setWizards(...$myPlayers);
 
         $oppTeam = new Team(1, $oppScore, $oppMagic);
-        $oppTeam->setWizards($oppPlayers);
+        $oppTeam->setWizards(...$oppPlayers);
 
         return [$myTeam, $oppTeam, $snaffles];
     }

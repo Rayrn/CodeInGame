@@ -63,12 +63,20 @@ class Game
     }
     public function updateState() : void
     {
-        [$this->myTeam, $this->oppTeam, $this->snaffles] = $this->stateReader->updateState();
+        [$this->myTeam, $this->oppTeam, $this->snaffles] = $this->stateReader->getGameState();
+    }
+    public function getActions() : array
+    {
+        $actions = [];
+        foreach ($this->myTeam->getWizards() as $wizard) {
+            $actions[] = 'MOVE 8000 3750 100';
+        }
+        return $actions;
     }
 }
 }
 
-namespace CodeInGame\FantasticBits\Map\Components {
+namespace CodeInGame\FantasticBits\Map\Component {
 use CodeInGame\FantasticBits\Map\Position;
 class Goal
 {
@@ -91,7 +99,7 @@ class Goal
 }
 }
 
-namespace CodeInGame\FantasticBits\Map\Components {
+namespace CodeInGame\FantasticBits\Map\Component {
 use CodeInGame\FantasticBits\Map\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
 class Goalpost implements Mappable
@@ -107,8 +115,8 @@ class Goalpost implements Mappable
     private $radius;
     public function __construct(Position $position)
     {
-        $this->position($position);
-        $this->radius(self::RADIUS);
+        $this->position = $position;
+        $this->radius = self::RADIUS;
     }
     public function getPosition() : Position
     {
@@ -345,6 +353,20 @@ class Team implements Identifiable
 }
 
 namespace CodeInGame\FantasticBits {
+$game = new Game(new StateReader());
+$game->init();
+new Debug($game);
+// game loop
+while (true) {
+    $game->updateState();
+    new Debug($game);
+    foreach ($game->getActions() as $action) {
+        echo $action . PHP_EOL;
+    }
+}
+}
+
+namespace CodeInGame\FantasticBits {
 use CodeInGame\FantasticBits\Map\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
@@ -371,9 +393,9 @@ class StateReader
         [$oppScore, $oppMagic] = $this->getTeamStats();
         [$snaffles, $myPlayers, $oppPlayers] = $this->getEntityList();
         $myTeam = new Team(0, $myMagic, $myScore);
-        $myTeam->setWizards($myPlayers);
+        $myTeam->setWizards(...$myPlayers);
         $oppTeam = new Team(1, $oppScore, $oppMagic);
-        $oppTeam->setWizards($oppPlayers);
+        $oppTeam->setWizards(...$oppPlayers);
         return [$myTeam, $oppTeam, $snaffles];
     }
     private function getTeamStats() : array

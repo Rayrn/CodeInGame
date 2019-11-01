@@ -65,6 +65,17 @@ class Game
 
     public function updateState(): void
     {
-        [$this->myTeam, $this->oppTeam, $this->snaffles] = $this->stateReader->updateState();
+        [$this->myTeam, $this->oppTeam, $this->snaffles] = $this->stateReader->getGameState();
+    }
+
+    public function getActions(): array
+    {
+        $actions = [];
+
+        foreach ($this->myTeam->getWizards() as $wizard) {
+            $actions[] = 'MOVE 8000 3750 100';
+        }
+
+        return $actions;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\FantasticBits\Map\Components;
+namespace CodeInGame\FantasticBits\Map\Component;
 
 use CodeInGame\FantasticBits\Map\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
@@ -21,8 +21,8 @@ class Goalpost implements Mappable
 
     public function __construct(Position $position)
     {
-        $this->position($position);
-        $this->radius(self::RADIUS);
+        $this->position = $position;
+        $this->radius = self::RADIUS;
     }
 
     public function getPosition(): Position

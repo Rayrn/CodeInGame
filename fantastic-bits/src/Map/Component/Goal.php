@@ -1,6 +1,6 @@
 <?php
 
-namespace CodeInGame\FantasticBits\Map\Components;
+namespace CodeInGame\FantasticBits\Map\Component;
 
 use CodeInGame\FantasticBits\Map\Position;
 
