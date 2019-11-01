@@ -12,7 +12,8 @@
     "autoload": {
         "psr-4": {
             "CodeInGame\\LegendsOfCodeMagic\\": "legends-of-code-magic/src",
-            "CodeInGame\\CodeVsZombies\\": "code-vs-zombies/src"
+            "CodeInGame\\CodeVsZombies\\": "code-vs-zombies/src",
+            "CodeInGame\\FantasticBits\\": "fantastic-bits/src"
         }
     },
     "require-dev": {
