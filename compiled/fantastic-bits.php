@@ -74,9 +74,11 @@ class Game
     }
     public function getActions() : array
     {
+        new Debug('Inactive', $this->myTeam->getWizards()->listInactive());
         $defaultActions = $this->getDefaultActions($this->myTeam->getWizards());
         $throwActions = $this->getThrowActions($this->myTeam->getWizards()->listActive());
         $moveActions = $this->getMoveActions($this->myTeam->getWizards()->listInactive());
+        new Debug($defaultActions, $throwActions, $moveActions);
         $actions = array_replace($defaultActions, $throwActions, $moveActions);
         ksort($actions);
         return $actions;
@@ -101,9 +103,9 @@ class Game
     private function getMoveActions(EntityCollection $needSnaffle) : array
     {
         $actions = [];
+        $targetList = $this->distanceCalculator->getPreferredEntity($needSnaffle, $this->snaffles);
         foreach ($needSnaffle as $wizard) {
-            $targetList = $this->distanceCalculator->getPreferredEntity($needSnaffle, $this->snaffles);
-            $filteredSnaffles = isset($targetList[$wizard->getId()]) ? new EntityCollection(...$targetList[$wizard->getId()]) : $this->snaffles;
+            $filteredSnaffles = isset($targetList[$wizard->getId()]) ? new EntityCollection(...$targetList[$wizard->getId()]) : new EntityCollection();
             $snaffle = $this->distanceCalculator->getNearestEntity($wizard->getPosition(), $filteredSnaffles);
             if (!$snaffle) {
                 continue;
@@ -118,7 +120,6 @@ class Game
 }
 
 namespace CodeInGame\FantasticBits\Location {
-use CodeInGame\FantasticBits\Debug;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
 use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 class DistanceCalculator
@@ -144,12 +145,19 @@ class DistanceCalculator
     }
     public function getPreferredEntity(EntityCollection $collectionA, EntityCollection $collectionB) : array
     {
+        if (empty($collectionA) || empty($collectionB)) {
+            return [];
+        }
         $nearest = [];
         foreach ($collectionB as $target) {
+            // Target is busy
             if ($target->getState() === true) {
                 continue;
             }
             $entity = $this->getNearestEntity($target->getPosition(), $collectionA);
+            if (!$entity) {
+                continue;
+            }
             $nearest[$entity->getId()][] = $target;
         }
         return $nearest;

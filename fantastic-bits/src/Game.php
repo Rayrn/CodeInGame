@@ -78,11 +78,16 @@ class Game
 
     public function getActions(): array
     {
+        new Debug('Inactive', $this->myTeam->getWizards()->listInactive());
+
         $defaultActions = $this->getDefaultActions($this->myTeam->getWizards());
         $throwActions = $this->getThrowActions($this->myTeam->getWizards()->listActive());
         $moveActions = $this->getMoveActions($this->myTeam->getWizards()->listInactive());
 
+        new Debug($defaultActions, $throwActions, $moveActions);
+
         $actions = array_replace($defaultActions, $throwActions, $moveActions);
+
 
         ksort($actions);
 
@@ -115,13 +120,13 @@ class Game
     private function getMoveActions(EntityCollection $needSnaffle): array
     {
         $actions = [];
+        
+        $targetList = $this->distanceCalculator->getPreferredEntity($needSnaffle, $this->snaffles);
 
         foreach ($needSnaffle as $wizard) {
-            $targetList = $this->distanceCalculator->getPreferredEntity($needSnaffle, $this->snaffles);
-
             $filteredSnaffles = isset($targetList[$wizard->getId()])
                 ? new EntityCollection(...$targetList[$wizard->getId()])
-                : $this->snaffles;
+                : new EntityCollection();
 
             $snaffle = $this->distanceCalculator->getNearestEntity($wizard->getPosition(), $filteredSnaffles);
 
