@@ -2,6 +2,7 @@
 
 namespace CodeInGame\FantasticBits\Location;
 
+use CodeInGame\FantasticBits\Debug;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
 use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 
@@ -32,16 +33,18 @@ class DistanceCalculator
         return $nearest;
     }
 
-    public function getNearestFreeEntity(Position $position, EntityCollection $collection): ?AbstractEntity
+    public function getPreferredEntity(EntityCollection $collectionA, EntityCollection $collectionB): array
     {
-        $freeEntities = new EntityCollection();
-
-        foreach ($collection as $entity) {
-            if ($entity->getState() === false) {
-                $freeEntities->add($entity);
+        $nearest = [];
+        foreach ($collectionB as $target) {
+            if ($target->getState() === true) {
+                continue;
             }
+
+            $entity = $this->getNearestEntity($target->getPosition(), $collectionA);
+            $nearest[$entity->getId()][] = $target;
         }
 
-        return $this->getNearestEntity($position, $freeEntities);
+        return $nearest;
     }
 }

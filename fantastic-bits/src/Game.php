@@ -6,6 +6,7 @@ use CodeInGame\FantasticBits\Location\DistanceCalculator;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Component\Goal;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 
 class Game
 {
@@ -77,27 +78,62 @@ class Game
 
     public function getActions(): array
     {
+        $defaultActions = $this->getDefaultActions($this->myTeam->getWizards());
+        $throwActions = $this->getThrowActions($this->myTeam->getWizards()->listActive());
+        $moveActions = $this->getMoveActions($this->myTeam->getWizards()->listInactive());
+
+        $actions = array_replace($defaultActions, $throwActions, $moveActions);
+
+        ksort($actions);
+
+        return $actions;
+    }
+
+    private function getDefaultActions(EntityCollection $wizards): array
+    {
         $actions = [];
 
-        foreach ($this->myTeam->getWizards() as $wizard) {
-            $command = $wizard->getState() ? 'THROW' : 'MOVE';
+        foreach ($wizards as $wizard) {
+            $actions[$wizard->getId()] = "MOVE 8000 3750 100";
+        }
 
-            switch ($command) {
-                case 'THROW':
-                    $target = $this->opponentGoal->getGoalCentre();
-                    $speed = 400;
-                    break;
-                case 'MOVE':
-                default:
-                    $snaffle = $this->distanceCalculator->getNearestFreeEntity($wizard->getPosition(), $this->snaffles);
-                    $snaffle->setState(true);
+        return $actions;
+    }
 
-                    $target = $snaffle->getPosition();
-                    $speed = 100;
-                    break;
+    private function getThrowActions(EntityCollection $haveSnaffle): array
+    {
+        $actions = [];
+
+        foreach ($haveSnaffle as $wizard) {
+            $target = $this->opponentGoal->getGoalCentre();
+            $actions[$wizard->getId()] = "THROW {$target->getX()} {$target->getY()} 400";
+        }
+
+        return $actions;
+    }
+
+    private function getMoveActions(EntityCollection $needSnaffle): array
+    {
+        $actions = [];
+
+        foreach ($needSnaffle as $wizard) {
+            $targetList = $this->distanceCalculator->getPreferredEntity($needSnaffle, $this->snaffles);
+
+            $filteredSnaffles = isset($targetList[$wizard->getId()])
+                ? new EntityCollection(...$targetList[$wizard->getId()])
+                : $this->snaffles;
+
+            $snaffle = $this->distanceCalculator->getNearestEntity($wizard->getPosition(), $filteredSnaffles);
+
+            if (!$snaffle) {
+                continue;
             }
 
-            $actions[] = "$command {$target->getX()} {$target->getY()} $speed";
+            $snaffle->setState(true);
+
+            $actions[$wizard->getId()] = "MOVE {$snaffle->getPosition()->getX()} {$snaffle->getPosition()->getY()} 100";
+
+            $needSnaffle->remove($wizard->getId());
         }
 
         return $actions;

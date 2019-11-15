@@ -16,6 +16,7 @@ use CodeInGame\FantasticBits\Location\DistanceCalculator;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Component\Goal;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 class Game
 {
     private const SCORE_LEFT = 0;
@@ -73,23 +74,43 @@ class Game
     }
     public function getActions() : array
     {
+        $defaultActions = $this->getDefaultActions($this->myTeam->getWizards());
+        $throwActions = $this->getThrowActions($this->myTeam->getWizards()->listActive());
+        $moveActions = $this->getMoveActions($this->myTeam->getWizards()->listInactive());
+        $actions = array_replace($defaultActions, $throwActions, $moveActions);
+        ksort($actions);
+        return $actions;
+    }
+    private function getDefaultActions(EntityCollection $wizards) : array
+    {
         $actions = [];
-        foreach ($this->myTeam->getWizards() as $wizard) {
-            $command = $wizard->getState() ? 'THROW' : 'MOVE';
-            switch ($command) {
-                case 'THROW':
-                    $target = $this->opponentGoal->getGoalCentre();
-                    $speed = 400;
-                    break;
-                case 'MOVE':
-                default:
-                    $snaffle = $this->distanceCalculator->getNearestFreeEntity($wizard->getPosition(), $this->snaffles);
-                    $snaffle->setState(true);
-                    $target = $snaffle->getPosition();
-                    $speed = 100;
-                    break;
+        foreach ($wizards as $wizard) {
+            $actions[$wizard->getId()] = "MOVE 8000 3750 100";
+        }
+        return $actions;
+    }
+    private function getThrowActions(EntityCollection $haveSnaffle) : array
+    {
+        $actions = [];
+        foreach ($haveSnaffle as $wizard) {
+            $target = $this->opponentGoal->getGoalCentre();
+            $actions[$wizard->getId()] = "THROW {$target->getX()} {$target->getY()} 400";
+        }
+        return $actions;
+    }
+    private function getMoveActions(EntityCollection $needSnaffle) : array
+    {
+        $actions = [];
+        foreach ($needSnaffle as $wizard) {
+            $targetList = $this->distanceCalculator->getPreferredEntity($needSnaffle, $this->snaffles);
+            $filteredSnaffles = isset($targetList[$wizard->getId()]) ? new EntityCollection(...$targetList[$wizard->getId()]) : $this->snaffles;
+            $snaffle = $this->distanceCalculator->getNearestEntity($wizard->getPosition(), $filteredSnaffles);
+            if (!$snaffle) {
+                continue;
             }
-            $actions[] = "{$command} {$target->getX()} {$target->getY()} {$speed}";
+            $snaffle->setState(true);
+            $actions[$wizard->getId()] = "MOVE {$snaffle->getPosition()->getX()} {$snaffle->getPosition()->getY()} 100";
+            $needSnaffle->remove($wizard->getId());
         }
         return $actions;
     }
@@ -97,6 +118,7 @@ class Game
 }
 
 namespace CodeInGame\FantasticBits\Location {
+use CodeInGame\FantasticBits\Debug;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
 use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 class DistanceCalculator
@@ -120,15 +142,17 @@ class DistanceCalculator
         }
         return $nearest;
     }
-    public function getNearestFreeEntity(Position $position, EntityCollection $collection) : ?AbstractEntity
+    public function getPreferredEntity(EntityCollection $collectionA, EntityCollection $collectionB) : array
     {
-        $freeEntities = new EntityCollection();
-        foreach ($collection as $entity) {
-            if ($entity->getState() === false) {
-                $freeEntities->add($entity);
+        $nearest = [];
+        foreach ($collectionB as $target) {
+            if ($target->getState() === true) {
+                continue;
             }
+            $entity = $this->getNearestEntity($target->getPosition(), $collectionA);
+            $nearest[$entity->getId()][] = $target;
         }
-        return $this->getNearestEntity($position, $freeEntities);
+        return $nearest;
     }
 }
 }
@@ -320,7 +344,11 @@ class EntityCollection implements IteratorAggregate
     /**
      * @var AbstractEntity[]
      */
-    private $collection;
+    private $collection = [];
+    public function __construct(AbstractEntity ...$collection)
+    {
+        $this->set(...$collection);
+    }
     public function add(AbstractEntity $entity) : void
     {
         if ($this->entityType === null) {
@@ -344,15 +372,35 @@ class EntityCollection implements IteratorAggregate
     {
         return new ArrayIterator($this->collection);
     }
+    public function listActive() : EntityCollection
+    {
+        $active = array_filter($this->collection, function ($entity) {
+            return $entity->getState() === true;
+        });
+        return new EntityCollection(...$active);
+    }
+    public function listInactive() : EntityCollection
+    {
+        $inactive = array_filter($this->collection, function ($entity) {
+            return $entity->getState() === false;
+        });
+        return new EntityCollection(...$inactive);
+    }
+    public function remove(int $entityId) : void
+    {
+        unset($this->collection[$entityId]);
+    }
     public function set(AbstractEntity ...$collection) : void
     {
         $this->collection = [];
-        $this->entityType = get_class(reset($collection));
-        foreach ($collection as $entity) {
-            if ($this->entityType !== get_class($entity)) {
-                throw new InvalidArgumentException('A collection may only contain one type of entity');
+        if ($collection) {
+            $this->entityType = get_class(reset($collection));
+            foreach ($collection as $entity) {
+                if ($this->entityType !== get_class($entity)) {
+                    throw new InvalidArgumentException('A collection may only contain one type of entity');
+                }
+                $this->collection[$entity->getId()] = $entity;
             }
-            $this->collection[$entity->getId()] = $entity;
         }
     }
 }
