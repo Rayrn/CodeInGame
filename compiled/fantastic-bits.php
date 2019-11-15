@@ -12,6 +12,7 @@ class Debug
 }
 
 namespace CodeInGame\FantasticBits {
+use CodeInGame\FantasticBits\Location\DistanceCalculator;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Component\Goal;
@@ -19,6 +20,10 @@ class Game
 {
     private const SCORE_LEFT = 0;
     private const SCORE_RIGHT = 1;
+    /**
+     * @var DistanceCalculator
+     */
+    private $distanceCalculator;
     /**
      * @var Goal
      */
@@ -43,8 +48,9 @@ class Game
      * @var StateReader
      */
     private $stateReader;
-    public function __construct(StateReader $stateReader)
+    public function __construct(StateReader $stateReader, DistanceCalculator $distanceCalculator)
     {
+        $this->distanceCalculator = $distanceCalculator;
         $this->stateReader = $stateReader;
     }
     public function init() : void
@@ -69,7 +75,21 @@ class Game
     {
         $actions = [];
         foreach ($this->myTeam->getWizards() as $wizard) {
-            $actions[] = 'MOVE 8000 3750 100';
+            $command = $wizard->getState() ? 'THROW' : 'MOVE';
+            switch ($command) {
+                case 'THROW':
+                    $target = $this->opponentGoal->getGoalCentre();
+                    $speed = 400;
+                    break;
+                case 'MOVE':
+                default:
+                    $snaffle = $this->distanceCalculator->getNearestFreeEntity($wizard->getPosition(), $this->snaffles);
+                    $snaffle->setState(true);
+                    $target = $snaffle->getPosition();
+                    $speed = 100;
+                    break;
+            }
+            $actions[] = "{$command} {$target->getX()} {$target->getY()} {$speed}";
         }
         return $actions;
     }
@@ -77,33 +97,21 @@ class Game
 }
 
 namespace CodeInGame\FantasticBits\Location {
+use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 class DistanceCalculator
 {
-    /**
-     * Get the distance between two positions
-     *
-     * @param Position $positionA
-     * @param Position $positionB
-     * @return int
-     */
-    private function getDistance(Position $positionA, Position $positionB) : int
+    public function getDistance(Position $positionA, Position $positionB) : int
     {
         $x = abs($positionA->getX() - $positionB->getX());
         $y = abs($positionA->gety() - $positionB->gety());
         return (int) sqrt($x * $x + $y * $y);
     }
-    /**
-     * Get the nearest entity to a position
-     *
-     * @param Position $position
-     * @param EntityCollection $collection
-     * @return ?Entity
-     */
-    private function getNearestEntity(Position $position, EntityCollection $collection) : ?Entity
+    public function getNearestEntity(Position $position, EntityCollection $collection) : ?AbstractEntity
     {
         $minDistance = null;
         $nearest = null;
-        foreach ($collection->listEntities() as $entity) {
+        foreach ($collection as $entity) {
             $distance = $this->getDistance($position, $entity->getPosition());
             if ($distance < $minDistance || is_null($minDistance)) {
                 $minDistance = $distance;
@@ -111,6 +119,16 @@ class DistanceCalculator
             }
         }
         return $nearest;
+    }
+    public function getNearestFreeEntity(Position $position, EntityCollection $collection) : ?AbstractEntity
+    {
+        $freeEntities = new EntityCollection();
+        foreach ($collection as $entity) {
+            if ($entity->getState() === false) {
+                $freeEntities->add($entity);
+            }
+        }
+        return $this->getNearestEntity($position, $freeEntities);
     }
 }
 }
@@ -126,39 +144,19 @@ class Position
      * @var int
      */
     private $y;
-    /**
-     * Create a new Position
-     *
-     * @param int $id;
-     */
     public function __construct(int $x, int $y)
     {
         $this->x = $x;
         $this->y = $y;
     }
-    /**
-     * Outputs a representation of the object as a string
-     *
-     * @return string
-     */
     public function __toString()
     {
         return $this->x . ' ' . $this->y;
     }
-    /**
-     * Get the X position
-     *
-     * @return int
-     */
     public function getX() : int
     {
         return $this->x;
     }
-    /**
-     * Get the Y position
-     *
-     * @return int
-     */
     public function getY() : int
     {
         return $this->y;
@@ -193,9 +191,9 @@ class Goal
     {
         return $this->northPost->getY() - $this->northPost->getRadius() / 2;
     }
-    public function getGoalCentre() : int
+    public function getGoalCentre() : Position
     {
-        return $this->centre->getPosition();
+        return $this->centre;
     }
     public function getGoalBottom() : int
     {
@@ -299,15 +297,21 @@ abstract class AbstractEntity implements Identifiable, Mappable, Moveable
     {
         return (bool) $this->state;
     }
+    public function setState(bool $state) : void
+    {
+        $this->state = $state;
+    }
 }
 }
 
 namespace CodeInGame\FantasticBits\Map\Entity {
+use ArrayIterator;
+use IteratorAggregate;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
 use CodeInGame\FantasticBits\Map\Interfaces\Moveable;
-class EntityCollection
+class EntityCollection implements IteratorAggregate
 {
     /**
      * @var string
@@ -317,6 +321,16 @@ class EntityCollection
      * @var AbstractEntity[]
      */
     private $collection;
+    public function add(AbstractEntity $entity) : void
+    {
+        if ($this->entityType === null) {
+            $this->entityType = get_class($entity);
+        }
+        if ($this->entityType !== get_class($entity)) {
+            throw new InvalidArgumentException('A collection may only contain one type of entity');
+        }
+        $this->collection[$entity->getId()] = $entity;
+    }
     public function get(int $id) : ?AbstractEntity
     {
         foreach ($this->collection as $entity) {
@@ -326,9 +340,9 @@ class EntityCollection
         }
         return null;
     }
-    public function list() : array
+    public function getIterator() : ArrayIterator
     {
-        return $this->collection;
+        return new ArrayIterator($this->collection);
     }
     public function set(AbstractEntity ...$collection) : void
     {
@@ -408,7 +422,7 @@ interface hasState
 }
 
 namespace CodeInGame\FantasticBits\Map {
-use CodeInGame\FantasticBits\Map\Entity\Wizard;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
 class Team implements Identifiable
 {
@@ -425,7 +439,7 @@ class Team implements Identifiable
      */
     private $score;
     /**
-     * @var Wizards[]
+     * @var EntityCollection
      */
     private $wizards;
     public function __construct(int $id, int $magic, int $score)
@@ -433,7 +447,7 @@ class Team implements Identifiable
         $this->id = $id;
         $this->magic = $magic;
         $this->score = $score;
-        $this->wizards = [];
+        $this->wizards = new EntityCollection();
     }
     public function getId() : int
     {
@@ -447,11 +461,11 @@ class Team implements Identifiable
     {
         return $this->score;
     }
-    public function getWizards() : array
+    public function getWizards() : EntityCollection
     {
         return $this->wizards;
     }
-    public function setWizards(Wizard ...$wizards) : void
+    public function setWizards(EntityCollection $wizards) : void
     {
         $this->wizards = $wizards;
     }
@@ -459,13 +473,12 @@ class Team implements Identifiable
 }
 
 namespace CodeInGame\FantasticBits {
-$game = new Game(new StateReader());
+use CodeInGame\FantasticBits\Location\DistanceCalculator;
+$game = new Game(new StateReader(), new DistanceCalculator());
 $game->init();
-new Debug($game);
 // game loop
 while (true) {
     $game->updateState();
-    new Debug($game);
     foreach ($game->getActions() as $action) {
         echo $action . PHP_EOL;
     }
@@ -476,6 +489,7 @@ namespace CodeInGame\FantasticBits {
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 use CodeInGame\FantasticBits\Map\Entity\Snaffle;
 use CodeInGame\FantasticBits\Map\Entity\Wizard;
 use InvalidArgumentException;
@@ -499,9 +513,9 @@ class StateReader
         [$oppScore, $oppMagic] = $this->getTeamStats();
         [$snaffles, $myPlayers, $oppPlayers] = $this->getEntityList();
         $myTeam = new Team(0, $myMagic, $myScore);
-        $myTeam->setWizards(...$myPlayers);
+        $myTeam->setWizards($myPlayers);
         $oppTeam = new Team(1, $oppScore, $oppMagic);
-        $oppTeam->setWizards(...$oppPlayers);
+        $oppTeam->setWizards($oppPlayers);
         return [$myTeam, $oppTeam, $snaffles];
     }
     private function getTeamStats() : array
@@ -515,25 +529,25 @@ class StateReader
     private function getEntityList() : array
     {
         fscanf(STDIN, '%d', $entities);
-        $myPlayers = [];
-        $oppPlayers = [];
-        $snaffles = [];
+        $myPlayers = new EntityCollection();
+        $oppPlayers = new EntityCollection();
+        $snaffles = new EntityCollection();
         $entityList = [];
         for ($i = 0; $i < $entities; $i++) {
             $entity = $this->loadEntity();
             if ($entity instanceof Snaffle) {
-                $snaffles[] = $entity;
+                $snaffles->add($entity);
                 continue;
             }
             if ($entity instanceof Wizard && $entity->getTeam() == 0) {
-                $myPlayers[] = $entity;
+                $myPlayers->add($entity);
                 continue;
             }
             if ($entity instanceof Wizard && $entity->getTeam() == 1) {
-                $oppPlayers[] = $entity;
+                $oppPlayers->add($entity);
                 continue;
             }
-            throw new InvalidArgumentException('Invalid Entity');
+            throw new InvalidArgumentException('Invalid Entity Type');
         }
         return [$snaffles, $myPlayers, $oppPlayers];
     }

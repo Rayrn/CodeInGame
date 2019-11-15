@@ -2,16 +2,14 @@
 
 namespace CodeInGame\FantasticBits;
 
-$game = new Game(new StateReader());
-$game->init();
+use CodeInGame\FantasticBits\Location\DistanceCalculator;
 
-new Debug($game);
+$game = new Game(new StateReader(), new DistanceCalculator());
+$game->init();
 
 // game loop
 while (true) {
     $game->updateState();
-
-    new Debug($game);
 
     foreach ($game->getActions() as $action) {
         echo $action . PHP_EOL;

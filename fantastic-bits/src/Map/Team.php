@@ -2,7 +2,7 @@
 
 namespace CodeInGame\FantasticBits\Map;
 
-use CodeInGame\FantasticBits\Map\Entity\Wizard;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
 
 class Team implements Identifiable
@@ -23,7 +23,7 @@ class Team implements Identifiable
     private $score;
 
     /**
-     * @var Wizards[]
+     * @var EntityCollection
      */
     private $wizards;
 
@@ -32,7 +32,7 @@ class Team implements Identifiable
         $this->id = $id;
         $this->magic = $magic;
         $this->score = $score;
-        $this->wizards = [];
+        $this->wizards = new EntityCollection();
     }
 
     public function getId(): int
@@ -50,12 +50,12 @@ class Team implements Identifiable
         return $this->score;
     }
 
-    public function getWizards(): array
+    public function getWizards(): EntityCollection
     {
         return $this->wizards;
     }
 
-    public function setWizards(Wizard ...$wizards): void
+    public function setWizards(EntityCollection $wizards): void
     {
         $this->wizards = $wizards;
     }

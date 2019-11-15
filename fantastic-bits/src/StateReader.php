@@ -5,6 +5,7 @@ namespace CodeInGame\FantasticBits;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
+use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 use CodeInGame\FantasticBits\Map\Entity\Snaffle;
 use CodeInGame\FantasticBits\Map\Entity\Wizard;
 use InvalidArgumentException;
@@ -34,10 +35,10 @@ class StateReader
         [$snaffles, $myPlayers, $oppPlayers] = $this->getEntityList();
 
         $myTeam = new Team(0, $myMagic, $myScore);
-        $myTeam->setWizards(...$myPlayers);
+        $myTeam->setWizards($myPlayers);
 
         $oppTeam = new Team(1, $oppScore, $oppMagic);
-        $oppTeam->setWizards(...$oppPlayers);
+        $oppTeam->setWizards($oppPlayers);
 
         return [$myTeam, $oppTeam, $snaffles];
     }
@@ -56,30 +57,30 @@ class StateReader
     {
         fscanf(STDIN, '%d', $entities);
 
-        $myPlayers = [];
-        $oppPlayers = [];
-        $snaffles = [];
+        $myPlayers = new EntityCollection();
+        $oppPlayers = new EntityCollection();
+        $snaffles = new EntityCollection();
 
         $entityList = [];
         for ($i = 0; $i < $entities; $i++) {
             $entity = $this->loadEntity();
 
             if ($entity instanceof Snaffle) {
-                $snaffles[] = $entity;
+                $snaffles->add($entity);
                 continue;
             }
 
             if ($entity instanceof Wizard && $entity->getTeam() == 0) {
-                $myPlayers[] = $entity;
+                $myPlayers->add($entity);
                 continue;
             }
 
             if ($entity instanceof Wizard && $entity->getTeam() == 1) {
-                $oppPlayers[] = $entity;
+                $oppPlayers->add($entity);
                 continue;
             }
 
-            throw new InvalidArgumentException('Invalid Entity');
+            throw new InvalidArgumentException('Invalid Entity Type');
         }
 
         return [$snaffles, $myPlayers, $oppPlayers];

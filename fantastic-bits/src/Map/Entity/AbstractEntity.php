@@ -67,4 +67,9 @@ abstract class AbstractEntity implements Identifiable, Mappable, Moveable
     {
         return (bool) $this->state;
     }
+
+    public function setState(bool $state): void
+    {
+        $this->state = $state;
+    }
 }

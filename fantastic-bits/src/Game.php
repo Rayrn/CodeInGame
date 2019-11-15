@@ -2,6 +2,7 @@
 
 namespace CodeInGame\FantasticBits;
 
+use CodeInGame\FantasticBits\Location\DistanceCalculator;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Component\Goal;
@@ -10,6 +11,11 @@ class Game
 {
     private const SCORE_LEFT = 0;
     private const SCORE_RIGHT = 1;
+
+    /**
+     * @var DistanceCalculator
+     */
+    private $distanceCalculator;
 
     /**
      * @var Goal
@@ -41,8 +47,9 @@ class Game
      */
     private $stateReader;
 
-    public function __construct(StateReader $stateReader)
+    public function __construct(StateReader $stateReader, DistanceCalculator $distanceCalculator)
     {
+        $this->distanceCalculator = $distanceCalculator;
         $this->stateReader = $stateReader;
     }
 
@@ -73,7 +80,24 @@ class Game
         $actions = [];
 
         foreach ($this->myTeam->getWizards() as $wizard) {
-            $actions[] = 'MOVE 8000 3750 100';
+            $command = $wizard->getState() ? 'THROW' : 'MOVE';
+
+            switch ($command) {
+                case 'THROW':
+                    $target = $this->opponentGoal->getGoalCentre();
+                    $speed = 400;
+                    break;
+                case 'MOVE':
+                default:
+                    $snaffle = $this->distanceCalculator->getNearestFreeEntity($wizard->getPosition(), $this->snaffles);
+                    $snaffle->setState(true);
+
+                    $target = $snaffle->getPosition();
+                    $speed = 100;
+                    break;
+            }
+
+            $actions[] = "$command {$target->getX()} {$target->getY()} $speed";
         }
 
         return $actions;

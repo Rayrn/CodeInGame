@@ -35,9 +35,9 @@ class Goal
         return $this->northPost->getY() - ($this->northPost->getRadius() / 2);
     }
 
-    public function getGoalCentre(): int
+    public function getGoalCentre(): Position
     {
-        return $this->centre->getPosition();
+        return $this->centre;
     }
 
     public function getGoalBottom(): int

@@ -2,12 +2,14 @@
 
 namespace CodeInGame\FantasticBits\Map\Entity;
 
+use ArrayIterator;
+use IteratorAggregate;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Interfaces\Identifiable;
 use CodeInGame\FantasticBits\Map\Interfaces\Mappable;
 use CodeInGame\FantasticBits\Map\Interfaces\Moveable;
 
-class EntityCollection
+class EntityCollection implements IteratorAggregate
 {
     /**
      * @var string
@@ -18,6 +20,19 @@ class EntityCollection
      * @var AbstractEntity[]
      */
     private $collection;
+
+    public function add(AbstractEntity $entity): void
+    {
+        if ($this->entityType === null) {
+            $this->entityType = get_class($entity);
+        }
+       
+        if ($this->entityType !== get_class($entity)) {
+            throw new InvalidArgumentException('A collection may only contain one type of entity');
+        }
+
+        $this->collection[$entity->getId()] = $entity;
+    }
 
     public function get(int $id): ?AbstractEntity
     {
@@ -30,9 +45,9 @@ class EntityCollection
         return null;
     }
 
-    public function list(): array
+    public function getIterator(): ArrayIterator
     {
-        return $this->collection;
+        return new ArrayIterator($this->collection);
     }
 
     public function set(AbstractEntity ...$collection): void
