@@ -14,6 +14,11 @@ class Game
     private const SCORE_RIGHT = 1;
 
     /**
+     * @var EntityCollection
+     */
+    private $bludgers;
+
+    /**
      * @var DistanceCalculator
      */
     private $distanceCalculator;
@@ -39,7 +44,7 @@ class Game
     private $oppTeam;
 
     /**
-     * @var Snaffle[]
+     * @var EntityCollection
      */
     private $snaffles;
 
@@ -73,7 +78,7 @@ class Game
 
     public function updateState(): void
     {
-        [$this->myTeam, $this->oppTeam, $this->snaffles] = $this->stateReader->getGameState();
+        [$this->myTeam, $this->oppTeam, $this->snaffles, $this->bludgers] = $this->stateReader->getGameState();
     }
 
     public function getActions(): array

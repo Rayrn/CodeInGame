@@ -22,6 +22,10 @@ class Game
     private const SCORE_LEFT = 0;
     private const SCORE_RIGHT = 1;
     /**
+     * @var EntityCollection
+     */
+    private $bludgers;
+    /**
      * @var DistanceCalculator
      */
     private $distanceCalculator;
@@ -42,7 +46,7 @@ class Game
      */
     private $oppTeam;
     /**
-     * @var Snaffle[]
+     * @var EntityCollection
      */
     private $snaffles;
     /**
@@ -70,7 +74,7 @@ class Game
     }
     public function updateState() : void
     {
-        [$this->myTeam, $this->oppTeam, $this->snaffles] = $this->stateReader->getGameState();
+        [$this->myTeam, $this->oppTeam, $this->snaffles, $this->bludgers] = $this->stateReader->getGameState();
     }
     public function getActions() : array
     {
@@ -337,6 +341,18 @@ abstract class AbstractEntity implements Identifiable, Mappable, Moveable
 }
 
 namespace CodeInGame\FantasticBits\Map\Entity {
+use CodeInGame\FantasticBits\Location\Position;
+class Bludger extends AbstractEntity
+{
+    private const RADIUS = 150;
+    public function __construct(int $id, Position $position, Position $heading, int $state)
+    {
+        parent::__construct($id, self::RADIUS, $position, $heading, $state);
+    }
+}
+}
+
+namespace CodeInGame\FantasticBits\Map\Entity {
 use ArrayIterator;
 use IteratorAggregate;
 use CodeInGame\FantasticBits\Location\Position;
@@ -545,12 +561,14 @@ namespace CodeInGame\FantasticBits {
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
+use CodeInGame\FantasticBits\Map\Entity\Bludger;
 use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 use CodeInGame\FantasticBits\Map\Entity\Snaffle;
 use CodeInGame\FantasticBits\Map\Entity\Wizard;
 use InvalidArgumentException;
 class StateReader
 {
+    private const BLUDGER = 'BLUDGER';
     private const SNAFFLE = 'SNAFFLE';
     private const FRIENDLY_WIZARD = 'WIZARD';
     private const OPPONENT_WIZARD = 'OPPONENT_WIZARD';
@@ -567,12 +585,12 @@ class StateReader
     {
         [$myScore, $myMagic] = $this->getTeamStats();
         [$oppScore, $oppMagic] = $this->getTeamStats();
-        [$snaffles, $myPlayers, $oppPlayers] = $this->getEntityList();
+        [$snaffles, $bludgers, $myPlayers, $oppPlayers] = $this->getEntityList();
         $myTeam = new Team(0, $myMagic, $myScore);
         $myTeam->setWizards($myPlayers);
         $oppTeam = new Team(1, $oppScore, $oppMagic);
         $oppTeam->setWizards($oppPlayers);
-        return [$myTeam, $oppTeam, $snaffles];
+        return [$myTeam, $oppTeam, $snaffles, $bludgers];
     }
     private function getTeamStats() : array
     {
@@ -585,6 +603,7 @@ class StateReader
     private function getEntityList() : array
     {
         fscanf(STDIN, '%d', $entities);
+        $bludgers = new EntityCollection();
         $myPlayers = new EntityCollection();
         $oppPlayers = new EntityCollection();
         $snaffles = new EntityCollection();
@@ -593,6 +612,10 @@ class StateReader
             $entity = $this->loadEntity();
             if ($entity instanceof Snaffle) {
                 $snaffles->add($entity);
+                continue;
+            }
+            if ($entity instanceof Bludger) {
+                $bludgers->add($entity);
                 continue;
             }
             if ($entity instanceof Wizard && $entity->getTeam() == 0) {
@@ -605,7 +628,7 @@ class StateReader
             }
             throw new InvalidArgumentException('Invalid Entity Type');
         }
-        return [$snaffles, $myPlayers, $oppPlayers];
+        return [$snaffles, $bludgers, $myPlayers, $oppPlayers];
     }
     /**
      * @throws InvalidArgumentException
@@ -613,6 +636,9 @@ class StateReader
     private function loadEntity() : AbstractEntity
     {
         fscanf(STDIN, '%d %s %d %d %d %d %d', $entityId, $entityType, $x, $y, $vx, $vy, $state);
+        if ($entityType == self::BLUDGER) {
+            return new Bludger($entityId, new Position($x, $y), new Position($vx, $vy), $state);
+        }
         if ($entityType == self::SNAFFLE) {
             return new Snaffle($entityId, new Position($x, $y), new Position($vx, $vy), $state);
         }

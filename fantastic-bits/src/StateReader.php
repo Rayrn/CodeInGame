@@ -5,6 +5,7 @@ namespace CodeInGame\FantasticBits;
 use CodeInGame\FantasticBits\Location\Position;
 use CodeInGame\FantasticBits\Map\Team;
 use CodeInGame\FantasticBits\Map\Entity\AbstractEntity;
+use CodeInGame\FantasticBits\Map\Entity\Bludger;
 use CodeInGame\FantasticBits\Map\Entity\EntityCollection;
 use CodeInGame\FantasticBits\Map\Entity\Snaffle;
 use CodeInGame\FantasticBits\Map\Entity\Wizard;
@@ -12,6 +13,7 @@ use InvalidArgumentException;
 
 class StateReader
 {
+    private const BLUDGER = 'BLUDGER';
     private const SNAFFLE = 'SNAFFLE';
     private const FRIENDLY_WIZARD = 'WIZARD';
     private const OPPONENT_WIZARD = 'OPPONENT_WIZARD';
@@ -32,7 +34,7 @@ class StateReader
     {
         [$myScore, $myMagic] = $this->getTeamStats();
         [$oppScore, $oppMagic] = $this->getTeamStats();
-        [$snaffles, $myPlayers, $oppPlayers] = $this->getEntityList();
+        [$snaffles, $bludgers, $myPlayers, $oppPlayers] = $this->getEntityList();
 
         $myTeam = new Team(0, $myMagic, $myScore);
         $myTeam->setWizards($myPlayers);
@@ -40,7 +42,7 @@ class StateReader
         $oppTeam = new Team(1, $oppScore, $oppMagic);
         $oppTeam->setWizards($oppPlayers);
 
-        return [$myTeam, $oppTeam, $snaffles];
+        return [$myTeam, $oppTeam, $snaffles, $bludgers];
     }
 
     private function getTeamStats(): array
@@ -57,6 +59,7 @@ class StateReader
     {
         fscanf(STDIN, '%d', $entities);
 
+        $bludgers = new EntityCollection();
         $myPlayers = new EntityCollection();
         $oppPlayers = new EntityCollection();
         $snaffles = new EntityCollection();
@@ -67,6 +70,11 @@ class StateReader
 
             if ($entity instanceof Snaffle) {
                 $snaffles->add($entity);
+                continue;
+            }
+
+            if ($entity instanceof Bludger) {
+                $bludgers->add($entity);
                 continue;
             }
 
@@ -83,7 +91,7 @@ class StateReader
             throw new InvalidArgumentException('Invalid Entity Type');
         }
 
-        return [$snaffles, $myPlayers, $oppPlayers];
+        return [$snaffles, $bludgers, $myPlayers, $oppPlayers];
     }
 
     /**
@@ -92,6 +100,10 @@ class StateReader
     private function loadEntity(): AbstractEntity
     {
         fscanf(STDIN, '%d %s %d %d %d %d %d', $entityId, $entityType, $x, $y, $vx, $vy, $state);
+
+        if ($entityType == self::BLUDGER) {
+            return new Bludger($entityId, new Position($x, $y), new Position($vx, $vy), $state);
+        }
 
         if ($entityType == self::SNAFFLE) {
             return new Snaffle($entityId, new Position($x, $y), new Position($vx, $vy), $state);
