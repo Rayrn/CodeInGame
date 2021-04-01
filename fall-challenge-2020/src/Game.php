@@ -3,11 +3,8 @@
 namespace CodeInGame\FallChallenge2020;
 
 use CodeInGame\FallChallenge2020\Entity\Cupboard;
-use CodeInGame\FallChallenge2020\Factory\Printer;
-use CodeInGame\FallChallenge2020\Entity\Book;
-use CodeInGame\FallChallenge2020\Entity\Recipe;
-use CodeInGame\FallChallenge2020\Entity\Item;
-use CodeInGame\FallChallenge2020\Entity\Spell;
+use CodeInGame\FallChallenge2020\Worker\Brewer;
+use CodeInGame\FallChallenge2020\Worker\Mage;
 
 class Game
 {

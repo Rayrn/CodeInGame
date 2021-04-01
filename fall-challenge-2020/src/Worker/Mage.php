@@ -4,6 +4,7 @@ namespace CodeInGame\FallChallenge2020\Worker;
 
 use CodeInGame\FallChallenge2020\Entity\Cupboard;
 use CodeInGame\FallChallenge2020\Entity\Book;
+use CodeInGame\FallChallenge2020\Entity\Recipe;
 use CodeInGame\FallChallenge2020\Entity\Spell;
 
 class Mage
@@ -17,11 +18,10 @@ class Mage
     }
 
     /**
-     * Find the most valuable recipe (based on time to make) in the current round
+     * Find the lowest level spell that makes something used by this recipe
      */
-    private function getBestSpell(Cupboard $cupboard, Book $spellbook, Recipe $recipe): ?Spell
+    public function getBestSpell(Cupboard $cupboard, Book $spellbook, Recipe $recipe): ?Spell
     {
-        $cupboard = $this->gameState->getPlayerCupboard();
         $missingIngredients = $cupboard->listMissingIngredients($recipe);
 
         // Deal with the first use case a little differently
