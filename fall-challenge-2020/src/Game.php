@@ -6,6 +6,8 @@ use CodeInGame\FallChallenge2020\Entity\Cupboard;
 use CodeInGame\FallChallenge2020\Factory\Printer;
 use CodeInGame\FallChallenge2020\Entity\Book;
 use CodeInGame\FallChallenge2020\Entity\Recipe;
+use CodeInGame\FallChallenge2020\Entity\Item;
+use CodeInGame\FallChallenge2020\Entity\Spell;
 
 class Game
 {
@@ -15,14 +17,20 @@ class Game
     private $gameState;
 
     /**
-     * @var Printer
+     * @var Brewer
      */
-    private $printer;
+    private $brewer;
 
-    public function __construct(GameState $gameState, Printer $printer)
+    /**
+     * @var Mage
+     */
+    private $mage;
+
+    public function __construct(GameState $gameState, Brewer $brewer, Mage $mage)
     {
         $this->gameState = $gameState;
-        $this->printer = $printer;
+        $this->hats['brewer'] = $brewer;
+        $this->hats['mage'] = $mage;
     }
 
     public function getGameState(): GameState
@@ -32,37 +40,36 @@ class Game
 
     public function process(): string
     {
+        // Supplies!
+        $cupboard = $this->gameState->getPlayerCupboard();
+
+        // Actions!
+        $orders = $this->gameState->getOrders();
+        $spells = $this->gameState->getPlayerSpells();
+
         // Start by seeing if there are any potions we can make
-        $brewable = $this->getBrewable();
+        $brewable = $cupboard->listUseable($orders);
 
-        if (!$brewable) {
-            return 'BREW ' . reset($brewable->list())->getId();
+        // If we can make something, do!
+        if (count($brewable->list()) > 0) {
+            return $this->hats['brewer']->makeRecipe($brewable);
         }
 
-        // If we can't brew anything, find the most valuable potion to start working towards
+        // Okay, we can't make anything. Can we cast anything?
+        $castable = $cupboard->listUseable($spells);
 
-
-        // Output the ID of the potion we made
-        return 'WAIT';
-    }
-
-    private function getBrewable(): Book
-    {
-        $brewable = array_filter($this->gameState->getOrders()->list(), function (Recipe $recipe) {
-            return $this->gameState->getPlayerCupboard()->canMake($recipe);
-        });
-
-        usort($brewable, function (Recipe $recipeA, Recipe $recipeB) {
-            return $recipeA->getPrice() < $recipeB->getPrice();
-        });
-
-        return $this->printer->writeBook(...$brewable);
-    }
-
-    private function getEffort()
-    {
-        foreach ($this->gameState->getOrders() as $recipe) {
-            # code...
+        // If we can't cast anything, rest!
+        if (count($castable->list()) == 0) {
+            return 'REST';
         }
+
+        // Find the most valuable recipe to start working towards
+        $recipe = $this->hats['brewer']->getBestRecipe($cupboard, $orders);
+
+        // Find the most valuable spell for the recipe (probably FIREBALL)
+        $spell = $this->hats['mage']->getBestSpell($cupboard, $castable, $recipe);
+
+        // FIREBALL!!!!
+        return $this->hats['mage']->castSpell($spell);
     }
 }

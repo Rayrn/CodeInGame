@@ -29,9 +29,19 @@ class Cupboard
         $this->rupees = $rupees;
     }
 
+    public function getIngredients(): array
+    {
+        return $this->ingredients;
+    }
+
+    public function getRupees(): int
+    {
+        return $this->rupees;
+    }
+
     public function canMake(Item $item): bool
     {
-        foreach ($item->getIngredients() as $key => $count) {
+        foreach ($item->getIngredientCost() as $key => $count) {
             if ($this->ingredients[$key] - $count < 0) {
                 return false;
             }
@@ -46,18 +56,37 @@ class Cupboard
             return false;
         }
 
-        foreach ($item->getIngredients() as $key => $count) {
-            $this->ingredients[$key] -= $count;
+        foreach ($item->getIngredientCost() as $key => $count) {
+            $this->ingredients[$key] - $count;
         }
 
         return true;
     }
 
-    public function toArray(): array
+    public function listUseable(Book $book): Book
     {
-        return [
-            'ingredients' => $this->ingredients,
-            'rupees' => $this->rupees
-        ];
+        $newBook = clone $book;
+
+        foreach ($newBook as $item) {
+            if (!$this->canMake($item)) {
+                $newBook->remove($item);
+            }
+        }
+
+        return $newBook;
+    }
+
+    public function listMissingIngredients(Item $item): array
+    {
+        $required = $item->getIngredientCost();
+
+        $missing = [];
+        foreach ($required as $key => $count) {
+            if ($this->ingredients[$key] < $count) {
+                $missing[$key] = abs($this->ingredients[$key] - $count);
+            }
+        }
+
+        return $missing;
     }
 }

@@ -25,4 +25,30 @@ class Item
     {
         return $this->ingredients;
     }
+
+    public function getIngredientGain(): array
+    {
+        $ingredientGain = [];
+
+        foreach ($this->ingredients as $key => $count) {
+            if ($count > 0) {
+                $ingredientGain[$key] = $count;
+            }
+        }
+
+        return $ingredientGain;
+    }
+
+    public function getIngredientCost(): array
+    {
+        $ingredientGain = [];
+
+        foreach ($this->ingredients as $key => $count) {
+            if ($count < 0) {
+                $ingredientGain[$key] = abs($count);
+            }
+        }
+
+        return $ingredientGain;
+    }
 }

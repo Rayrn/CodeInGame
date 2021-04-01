@@ -2,9 +2,11 @@
 namespace CodeInGame\FallChallenge2020 {
 class Debug
 {
-    public function __construct($entity)
+    public function __construct(...$entity)
     {
-        error_log(var_export($entity, true));
+        foreach ($entity as $item) {
+            error_log(var_export($item, true));
+        }
     }
 }
 }
@@ -58,9 +60,17 @@ class Cupboard
         $this->ingredients[] = $ingredientThreeCount;
         $this->rupees = $rupees;
     }
+    public function getIngredients() : array
+    {
+        return $this->ingredients;
+    }
+    public function getRupees() : int
+    {
+        return $this->rupees;
+    }
     public function canMake(Item $item) : bool
     {
-        foreach ($item->getIngredients() as $key => $count) {
+        foreach ($item->getIngredientCost() as $key => $count) {
             if ($this->ingredients[$key] - $count < 0) {
                 return false;
             }
@@ -72,14 +82,31 @@ class Cupboard
         if (!$this->canMake($item)) {
             return false;
         }
-        foreach ($item->getIngredients() as $key => $count) {
-            $this->ingredients[$key] -= $count;
+        foreach ($item->getIngredientCost() as $key => $count) {
+            $this->ingredients[$key] - $count;
         }
         return true;
     }
-    public function toArray() : array
+    public function listUseable(Book $book) : Book
     {
-        return ['ingredients' => $this->ingredients, 'rupees' => $this->rupees];
+        $newBook = clone $book;
+        foreach ($newBook as $item) {
+            if (!$this->canMake($item)) {
+                $newBook->remove($item);
+            }
+        }
+        return $newBook;
+    }
+    public function listMissingIngredients(Item $item) : array
+    {
+        $required = $item->getIngredientCost();
+        $missing = [];
+        foreach ($required as $key => $count) {
+            if ($this->ingredients[$key] < $count) {
+                $missing[$key] = abs($this->ingredients[$key] - $count);
+            }
+        }
+        return $missing;
     }
 }
 }
@@ -103,6 +130,26 @@ class Item
     public function getIngredients() : array
     {
         return $this->ingredients;
+    }
+    public function getIngredientGain() : array
+    {
+        $ingredientGain = [];
+        foreach ($this->ingredients as $key => $count) {
+            if ($count > 0) {
+                $ingredientGain[$key] = $count;
+            }
+        }
+        return $ingredientGain;
+    }
+    public function getIngredientCost() : array
+    {
+        $ingredientGain = [];
+        foreach ($this->ingredients as $key => $count) {
+            if ($count < 0) {
+                $ingredientGain[$key] = abs($count);
+            }
+        }
+        return $ingredientGain;
     }
 }
 }
@@ -193,6 +240,8 @@ use CodeInGame\FallChallenge2020\Entity\Cupboard;
 use CodeInGame\FallChallenge2020\Factory\Printer;
 use CodeInGame\FallChallenge2020\Entity\Book;
 use CodeInGame\FallChallenge2020\Entity\Recipe;
+use CodeInGame\FallChallenge2020\Entity\Item;
+use CodeInGame\FallChallenge2020\Entity\Spell;
 class Game
 {
     /**
@@ -200,13 +249,18 @@ class Game
      */
     private $gameState;
     /**
-     * @var Printer
+     * @var Brewer
      */
-    private $printer;
-    public function __construct(GameState $gameState, Printer $printer)
+    private $brewer;
+    /**
+     * @var Mage
+     */
+    private $mage;
+    public function __construct(GameState $gameState, Brewer $brewer, Mage $mage)
     {
         $this->gameState = $gameState;
-        $this->printer = $printer;
+        $this->hats['brewer'] = $brewer;
+        $this->hats['mage'] = $mage;
     }
     public function getGameState() : GameState
     {
@@ -214,30 +268,29 @@ class Game
     }
     public function process() : string
     {
+        // Supplies!
+        $cupboard = $this->gameState->getPlayerCupboard();
+        // Actions!
+        $orders = $this->gameState->getOrders();
+        $spells = $this->gameState->getPlayerSpells();
         // Start by seeing if there are any potions we can make
-        $brewable = $this->getBrewable();
-        if (!$brewable) {
-            return 'BREW ' . reset($brewable->list())->getId();
+        $brewable = $cupboard->listUseable($orders);
+        // If we can make something, do!
+        if (count($brewable->list()) > 0) {
+            return $this->hats['brewer']->makeRecipe($brewable);
         }
-        // If we can't brew anything, find the most valuable potion to start working towards
-        // Output the ID of the potion we made
-        return 'WAIT';
-    }
-    private function getBrewable() : Book
-    {
-        $brewable = array_filter($this->gameState->getOrders()->list(), function (Recipe $recipe) {
-            return $this->gameState->getPlayerCupboard()->canMake($recipe);
-        });
-        usort($brewable, function (Recipe $recipeA, Recipe $recipeB) {
-            return $recipeA->getPrice() < $recipeB->getPrice();
-        });
-        return $this->printer->writeBook(...$brewable);
-    }
-    private function getEffort()
-    {
-        foreach ($this->gameState->getOrders() as $recipe) {
-            # code...
+        // Okay, we can't make anything. Can we cast anything?
+        $castable = $cupboard->listUseable($spells);
+        // If we can't cast anything, rest!
+        if (count($castable->list()) == 0) {
+            return 'REST';
         }
+        // Find the most valuable recipe to start working towards
+        $recipe = $this->hats['brewer']->getBestRecipe($cupboard, $orders);
+        // Find the most valuable spell for the recipe (probably FIREBALL)
+        $spell = $this->hats['mage']->getBestSpell($cupboard, $castable, $recipe);
+        // FIREBALL!!!!
+        return $this->hats['mage']->castSpell($spell);
     }
 }
 }
@@ -310,10 +363,42 @@ class GameState
 }
 }
 
+namespace CodeInGame\FallChallenge2020\Helper {
+use CodeInGame\FallChallenge2020\Entity\Cupboard;
+use CodeInGame\FallChallenge2020\Entity\Recipe;
+class PrepTimeCalculator
+{
+    /**
+     * How long would it take us to make this recipe?
+     */
+    public function calculatePrepTime(Cupboard $cupboard, Recipe $recipe) : int
+    {
+        $missing = $cupboard->listMissingIngredients($recipe);
+        // For now, lets just hard-code this as the spells all exchange one ingredient for the level above
+        $timeToPrep = 0;
+        foreach ($missing as $level => $count) {
+            $timeToPrep += $level * $count;
+        }
+        // Add in level 0 generation
+        $missingRawIngredientCount = array_sum($cupboard->getIngredients()) - array_sum($recipe->getIngredientCost());
+        if ($missingRawIngredientCount > 0) {
+            $timeToPrep += ceil($missingRawIngredientCount / 2);
+        }
+        // Add in rests
+        $timeToPrep += max($missing);
+        return $timeToPrep;
+    }
+}
+}
+
 namespace CodeInGame\FallChallenge2020 {
 use CodeInGame\FallChallenge2020\Factory\Printer;
 use CodeInGame\FallChallenge2020\Factory\Workshop;
-$game = new Game(new GameState(), new Printer());
+use CodeInGame\FallChallenge2020\Helper\PrepTimeCalculator;
+use CodeInGame\FallChallenge2020\Worker\Brewer;
+use CodeInGame\FallChallenge2020\Worker\Mage;
+// I miss autowiring already
+$game = new Game(new GameState(), new Brewer(new PrepTimeCalculator()), new Mage());
 $stateReader = new StateReader($game, new Printer(), new Workshop());
 // game loop
 while (true) {
@@ -384,6 +469,101 @@ class StateReader
         }
         $this->game->getGameState()->setPlayerCupboard($cupboards[0]);
         $this->game->getGameState()->setOpponentCupboard($cupboards[1]);
+    }
+}
+}
+
+namespace CodeInGame\FallChallenge2020\Worker {
+use CodeInGame\FallChallenge2020\Entity\Cupboard;
+use CodeInGame\FallChallenge2020\Entity\Book;
+use CodeInGame\FallChallenge2020\Entity\Recipe;
+use CodeInGame\FallChallenge2020\Helper\PrepTimeCalculator;
+class Brewer
+{
+    /**
+     * @var PrepTimeCalculator
+     */
+    private $prepTimeCalculator;
+    public function __construct(PrepTimeCalculator $prepTimeCalculator)
+    {
+        $this->prepTimeCalculator = $prepTimeCalculator;
+    }
+    /**
+     * Generate the make recipe command for the most expensive recipe in the book
+     */
+    public function makeRecipe(Book $book)
+    {
+        usort($book, function (Recipe $recipeA, Recipe $recipeB) {
+            return $recipeA->getPrice() < $recipeB->getPrice();
+        });
+        return 'BREW ' . reset($book->list())->getId();
+    }
+    /**
+     * Find the most valuable recipe (based on time to make) in the current round
+     */
+    public function getBestRecipe(Cupboard $cupboard, Book $orders) : Recipe
+    {
+        // Check how long each will take
+        $prepTimes = [];
+        foreach ($orders as $recipe) {
+            $prepTime = $this->prepTimeCalculator->calculatePrepTime($cupboard, $recipe);
+            $prepTimes[$prepTime][] = $recipe;
+        }
+        // Sort into ROI => Time
+        $roi = [];
+        foreach ($prepTimes as $time => $recipes) {
+            foreach ($recipes as $recipe) {
+                $actionRoI = $recipe->getPrice() / $time * 1000;
+                $roi[$actionRoI][$time][] = $recipe;
+            }
+        }
+        // Get the most valuable ROI set first
+        $mostValuable = $roi[max(array_keys($roi))];
+        // Then find the quickest
+        $quickest = $mostValuable[min(array_keys($mostValuable))];
+        // Return the first item (as they're all theoretically identical at this point)
+        return reset($quickest);
+    }
+}
+}
+
+namespace CodeInGame\FallChallenge2020\Worker {
+use CodeInGame\FallChallenge2020\Entity\Cupboard;
+use CodeInGame\FallChallenge2020\Entity\Book;
+use CodeInGame\FallChallenge2020\Entity\Spell;
+class Mage
+{
+    /**
+     * Try to generate the command to cast a spell, or rest if thats impossible
+     */
+    public function castSpell(?Spell $spell)
+    {
+        return $spell ? 'CAST ' . $spell->getId() : 'REST';
+    }
+    /**
+     * Find the most valuable recipe (based on time to make) in the current round
+     */
+    private function getBestSpell(Cupboard $cupboard, Book $spellbook, Recipe $recipe) : ?Spell
+    {
+        $cupboard = $this->gameState->getPlayerCupboard();
+        $missingIngredients = $cupboard->listMissingIngredients($recipe);
+        // Deal with the first use case a little differently
+        if (array_sum($missingIngredients) > array_sum($cupboard->getIngredients())) {
+            foreach ($spellbook as $spell) {
+                if (array_key_exists(0, $spell->getIngredientGain())) {
+                    return $spell;
+                }
+            }
+        }
+        // Find the first spell that makes an ingredient of the required level
+        foreach (array_keys($missingIngredients) as $level) {
+            foreach ($spellbook as $spell) {
+                if (array_key_exists($level, $spell->getIngredientGain())) {
+                    return $spell;
+                }
+            }
+        }
+        return null;
     }
 }
 }
