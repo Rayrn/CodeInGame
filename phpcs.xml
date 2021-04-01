@@ -8,7 +8,7 @@
     <arg name="extensions" value="php"/>
 
     <!-- Directories to scan -->
-    <file>code-vs-zomies/</file>
+    <file>code-vs-zombies/</file>
     <file>legends-of-code-magic/</file>
     <file>standalone/</file>
 

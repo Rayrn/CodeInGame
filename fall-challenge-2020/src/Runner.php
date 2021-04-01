@@ -1,16 +1,16 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\FallChallenge2020;
 
-$game = new Game(new Player\Player(), new Player\Opponent());
-$stateReader = new StateReader($game);
+use CodeInGame\FallChallenge2020\Factory\Printer;
+use CodeInGame\FallChallenge2020\Factory\Workshop;
+
+$game = new Game(new GameState(), new Printer());
+$stateReader = new StateReader($game, new Printer(), new Workshop());
 
 // game loop
 while (true) {
     $stateReader->updateState();
 
-    $game->applyOpponentsActions();
-    echo $game->getPlayerActions();
-
-    $game->cleanup();
+    echo $game->process() . PHP_EOL;
 }

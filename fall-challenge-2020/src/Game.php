@@ -1,98 +1,68 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\FallChallenge2020;
 
-use CodeInGame\LegendsOfCodeMagic\Action\BattleAction;
-use CodeInGame\LegendsOfCodeMagic\Action\DraftAction;
-use CodeInGame\LegendsOfCodeMagic\Card\Card;
-use CodeInGame\LegendsOfCodeMagic\Card\CardCollection;
-use CodeInGame\LegendsOfCodeMagic\Card\CardFactory;
-use CodeInGame\LegendsOfCodeMagic\Card\CardReferenceCollection;
-use CodeInGame\LegendsOfCodeMagic\Player\Opponent;
-use CodeInGame\LegendsOfCodeMagic\Player\Player;
+use CodeInGame\FallChallenge2020\Entity\Cupboard;
+use CodeInGame\FallChallenge2020\Factory\Printer;
+use CodeInGame\FallChallenge2020\Entity\Book;
+use CodeInGame\FallChallenge2020\Entity\Recipe;
 
 class Game
 {
-    public const LOCATION_BOARD_PLAYER = 1;
-    public const LOCATION_HAND_PLAYER = 0;
-    public const LOCATION_BOARD_OPPONENT = -1;
+    /**
+     * @var gameState
+     */
+    private $gameState;
 
-    private $board;
-    private $cardCollection;
-    private $cardFactory;
-    private $player;
-    private $opponent;
+    /**
+     * @var Printer
+     */
+    private $printer;
 
-    public function __construct(Player $player, Opponent $opponent)
+    public function __construct(GameState $gameState, Printer $printer)
     {
-        $this->player = $player;
-        $this->opponent = $opponent;
-
-        $this->board = new CardReferenceCollection();
-        $this->cardCollection = new CardCollection();
-        $this->cardFactory = new CardFactory();
+        $this->gameState = $gameState;
+        $this->printer = $printer;
     }
 
-    public function getBoard(): CardReferenceCollection
+    public function getGameState(): GameState
     {
-        return $this->board;
+        return $this->gameState;
     }
 
-    public function getCardCollection(): CardCollection
+    public function process(): string
     {
-        return $this->cardCollection;
-    }
+        // Start by seeing if there are any potions we can make
+        $brewable = $this->getBrewable();
 
-    public function getCardFactory(): CardFactory
-    {
-        return $this->cardFactory;
-    }
-
-    public function getPlayer(): Player
-    {
-        return $this->player;
-    }
-
-    public function getOpponent(): Opponent
-    {
-        return $this->opponent;
-    }
-
-    public function updateState(array $cardData): void
-    {
-        foreach ($cardData as $data) {
-            [$card, $location] = $data;
-
-            $this->cardCollection->add($card, $location);
-            $this->board->add($card->getInstanceId());
-        }
-    }
-
-    public function applyOpponentsActions(): void
-    {
-        $actions = $this->opponent->getActions();
-
-        foreach ($actions as $action) {
-            $card = $this->cardCollection->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
-
-            // new Debug("{$card->getNumber()}, {$action['action']}");
+        if (!$brewable) {
+            return 'BREW ' . reset($brewable->list())->getId();
         }
 
-        $this->opponent->clearActions();
+        // If we can't brew anything, find the most valuable potion to start working towards
+
+
+        // Output the ID of the potion we made
+        return 'WAIT';
     }
 
-    public function getPlayerActions(): string
+    private function getBrewable(): Book
     {
-        $playerActions = in_array(-1, $this->board->list())
-            ? (new DraftAction($this->cardCollection))->getActions()
-            : (new BattleAction($this->cardCollection, $this->player, $this->opponent))->getActions();
+        $brewable = array_filter($this->gameState->getOrders()->list(), function (Recipe $recipe) {
+            return $this->gameState->getPlayerCupboard()->canMake($recipe);
+        });
 
-        return implode(';', $playerActions) . "\n";
+        usort($brewable, function (Recipe $recipeA, Recipe $recipeB) {
+            return $recipeA->getPrice() < $recipeB->getPrice();
+        });
+
+        return $this->printer->writeBook(...$brewable);
     }
 
-    public function cleanup(): void
+    private function getEffort()
     {
-        $this->cardCollection->clear();
-        $this->board->clear();
+        foreach ($this->gameState->getOrders() as $recipe) {
+            # code...
+        }
     }
 }
