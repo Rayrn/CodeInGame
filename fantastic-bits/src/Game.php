@@ -83,13 +83,9 @@ class Game
 
     public function getActions(): array
     {
-        new Debug('Inactive', $this->myTeam->getWizards()->listInactive());
-
         $defaultActions = $this->getDefaultActions($this->myTeam->getWizards());
         $throwActions = $this->getThrowActions($this->myTeam->getWizards()->listActive());
         $moveActions = $this->getMoveActions($this->myTeam->getWizards()->listInactive());
-
-        new Debug($defaultActions, $throwActions, $moveActions);
 
         $actions = array_replace($defaultActions, $throwActions, $moveActions);
 
