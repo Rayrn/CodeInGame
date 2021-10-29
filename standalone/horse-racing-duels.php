@@ -29,12 +29,12 @@ class GameState
     {
         fscanf(STDIN, "%d", $this->count);
 
-        for ($i = 0; $i < $this->count; $i++) { 
+        for ($i = 0; $i < $this->count; $i++) {
             fscanf(STDIN, "%d", $this->horses[]);
         }
     }
 
-    public function getClosestHorses() : int
+    public function getClosestHorses(): int
     {
         if (count($this->horses) == 1) {
             return $this->horses[0];

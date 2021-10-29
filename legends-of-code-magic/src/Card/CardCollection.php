@@ -45,7 +45,7 @@ class CardCollection
     {
         $list = [];
 
-        foreach ($this->collection as $data)  {
+        foreach ($this->collection as $data) {
             if ($data['location'] === $location) {
                 $list[] = $data['card'];
             }

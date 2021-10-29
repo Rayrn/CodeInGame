@@ -12,7 +12,7 @@ class Opponent extends Player
         int $mana,
         int $rune,
         int $draw,
-        int $cardsInHand = 0, 
+        int $cardsInHand = 0,
         array $actions = []
     ): void {
         parent::updateState($health, $mana, $rune, $draw);

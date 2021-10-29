@@ -34,7 +34,7 @@ class GameState
         }
     }
 
-    public function getTemperatures() : array
+    public function getTemperatures(): array
     {
         return $this->temperatures;
     }

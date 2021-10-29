@@ -41,7 +41,7 @@ class BattleAction
         $scores = [];
         $costs = [];
         
-        foreach($this->cardCollection->listForLocation(Game::LOCATION_HAND_PLAYER) as $card) {
+        foreach ($this->cardCollection->listForLocation(Game::LOCATION_HAND_PLAYER) as $card) {
             if ($card->getCost() > $manaAvaliable) {
                 continue;
             }
