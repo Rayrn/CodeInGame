@@ -1,16 +1,13 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\FallChallenge2020;
 
 class Debug
 {
-    /**
-     * Output data to the console
-     *
-     * @param mixed $entity
-     */
-    public function __construct($entity)
+    public function __construct(...$entity)
     {
-        error_log(var_export($entity, true));
+        foreach ($entity as $item) {
+            error_log(var_export($item, true));
+        }
     }
 }
