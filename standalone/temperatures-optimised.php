@@ -34,7 +34,7 @@ class GameState
         }
     }
 
-    public function getClosestTemp() : int
+    public function getClosestTemp(): int
     {
         if (empty($this->temperatures) || isset(array_flip($this->temperatures)[0])) {
             return 0;

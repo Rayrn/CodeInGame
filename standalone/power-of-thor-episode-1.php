@@ -43,12 +43,12 @@ class GameState
         fscanf(STDIN, "%d", $this->energy);
     }
 
-    public function getLight() : Light
+    public function getLight(): Light
     {
         return $this->light;
     }
 
-    public function getThor() : Thor
+    public function getThor(): Thor
     {
         return $this->thor;
     }
@@ -83,7 +83,7 @@ class Light implements Plottable
      *
      * @return int
      */
-    public function getX() : int
+    public function getX(): int
     {
         return $this->x;
     }
@@ -93,7 +93,7 @@ class Light implements Plottable
      *
      * @return int
      */
-    public function getY() : int
+    public function getY(): int
     {
         return $this->y;
     }
@@ -128,7 +128,7 @@ class Thor implements Plottable, Moveable
      *
      * @return int
      */
-    public function getX() : int
+    public function getX(): int
     {
         return $this->x;
     }
@@ -138,7 +138,7 @@ class Thor implements Plottable, Moveable
      *
      * @return int
      */
-    public function getY() : int
+    public function getY(): int
     {
         return $this->y;
     }
@@ -162,14 +162,14 @@ interface Plottable
      *
      * @return int
      */
-    public function getX() : int;
+    public function getX(): int;
 
     /**
      * Fetch the Y co-ordinate
      *
      * @return int
      */
-    public function getY() : int;
+    public function getY(): int;
 }
 
 interface Moveable

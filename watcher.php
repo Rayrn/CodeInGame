@@ -7,7 +7,7 @@ use JasonLewis\ResourceWatcher\Tracker;
 use JasonLewis\ResourceWatcher\Watcher;
 
 $base = $argv[1] ?? '';
-$filepath = loadFilepath($base);
+$filepath = getAbsoluteFilepath($base);
 
 echo "Watching $filepath\n";
 
@@ -20,12 +20,28 @@ $listener->anything(function () use ($base) {
 
 $watcher->start();
 
-function loadFilepath(string $relativeFilepath): string
+function getAbsoluteFilepath(string $relativeFilepath): string
 {
-    return __DIR__ . '/' . $relativeFilepath . '/src/';
+    return convertFilepathsToWindows(__DIR__ . '/' . $relativeFilepath . '/src/');
 }
 
 function runCompiler(string $mapperLocation, string $outputLocation): void
 {
-    shell_exec("vendor/bin/classpreloader.php compile --config {$mapperLocation} --output $outputLocation");
+    $command = convertFilepathsToWindows("vendor/bin/classpreloader.php compile --config $mapperLocation --output $outputLocation");
+    $output = shell_exec($command);
+
+    # Debug
+    echo convertFilepathsToUnix($command, '/'), PHP_EOL;
+    echo $output;
+}
+
+/** Convert to windows style filepaths */
+function convertFilepathsToWindows(string $filepath): string
+{
+    return str_replace('/', DIRECTORY_SEPARATOR, $filepath);
+}
+
+function convertFilepathsToUnix(string $filepath): string
+{
+    return str_replace(DIRECTORY_SEPARATOR, '/', $filepath);
 }

@@ -42,7 +42,7 @@ class GameState
 
         fscanf(STDIN, "%d", $this->count);
 
-        for ($i = 0; $i < $this->count; $i++) { 
+        for ($i = 0; $i < $this->count; $i++) {
             $data = stream_get_line(STDIN, 256 + 1, "\n");
             $data = array_values(array_filter(explode(';', $data)));
 
@@ -56,14 +56,14 @@ class GameState
         }
     }
 
-    public function closest() : Defibrillator
+    public function closest(): Defibrillator
     {
         $distances = [];
 
         debug($this);
     }
 
-    private function convertToFloat(string $number) : float
+    private function convertToFloat(string $number): float
     {
         return floatval(str_replace(',', '.', $number));
     }
@@ -76,14 +76,14 @@ interface Plottable
      *
      * @return float
      */
-    public function getX() : float;
+    public function getX(): float;
 
     /**
      * Fetch the Y co-ordinate
      *
      * @return float
      */
-    public function getY() : float;
+    public function getY(): float;
 }
 
 class User implements Plottable
@@ -115,7 +115,7 @@ class User implements Plottable
      *
      * @return float
      */
-    public function getX() : float
+    public function getX(): float
     {
         return $this->x;
     }
@@ -125,7 +125,7 @@ class User implements Plottable
      *
      * @return float
      */
-    public function getY() : float
+    public function getY(): float
     {
         return $this->y;
     }
@@ -181,7 +181,7 @@ class Defibrillator implements Plottable
      *
      * @return int
      */
-    public function getId() : int
+    public function getId(): int
     {
         return $this->id;
     }
@@ -191,7 +191,7 @@ class Defibrillator implements Plottable
      *
      * @return string
      */
-    public function getName() : string
+    public function getName(): string
     {
         return $this->name;
     }
@@ -201,7 +201,7 @@ class Defibrillator implements Plottable
      *
      * @return string
      */
-    public function getAddress() : string
+    public function getAddress(): string
     {
         return $this->address;
     }
@@ -211,7 +211,7 @@ class Defibrillator implements Plottable
      *
      * @return float
      */
-    public function getX() : float
+    public function getX(): float
     {
         return $this->x;
     }
@@ -221,7 +221,7 @@ class Defibrillator implements Plottable
      *
      * @return float
      */
-    public function getY() : float
+    public function getY(): float
     {
         return $this->y;
     }

@@ -142,52 +142,52 @@ class GameState
         }
     }
 
-    public function getPlayerCount() : int
+    public function getPlayerCount(): int
     {
         return $this->playerCount;
     }
 
-    public function getPlayerID() : int
+    public function getPlayerID(): int
     {
         return $this->playerId;
     }
 
-    public function getDroneAllocation() : int
+    public function getDroneAllocation(): int
     {
         return $this->droneAllocation;
     }
 
-    public function getZoneCount() : int
+    public function getZoneCount(): int
     {
         return $this->zoneCount;
     }
 
-    public function getZones() : array
+    public function getZones(): array
     {
         return $this->zones;
     }
 
-    public function getZone(int $zoneId) : Zone
+    public function getZone(int $zoneId): Zone
     {
         return $this->zones[$zoneId];
     }
 
-    public function getAllDrones() : array
+    public function getAllDrones(): array
     {
         return $this->drones;
     }
 
-    public function getPlayerDrones() : array
+    public function getPlayerDrones(): array
     {
         return $this->drones[$this->playerId];
     }
 
-    public function getPlayerDrone(int $droneId) : Drone
+    public function getPlayerDrone(int $droneId): Drone
     {
         return $this->drones[$this->playerId][$droneId];
     }
 
-    public function getNPCDrones() : array
+    public function getNPCDrones(): array
     {
         $drones = $this->drones;
 
@@ -227,12 +227,12 @@ class Zone
         $this->y = $y;
     }
 
-    public function getId() : int
+    public function getId(): int
     {
         return $this->id;
     }
 
-    public function getOwner() : int
+    public function getOwner(): int
     {
         return $this->owner;
     }
@@ -242,12 +242,12 @@ class Zone
         $this->owner = $owner;
     }
 
-    public function getX() : int
+    public function getX(): int
     {
         return $this->x;
     }
 
-    public function getY() : int
+    public function getY(): int
     {
         return $this->y;
     }
@@ -257,7 +257,7 @@ class Zone
      *
      * @param array $npcDroneSet
      */
-    public function calculateRequiredDrones(array $npcDrones, int $playerId) : int
+    public function calculateRequiredDrones(array $npcDrones, int $playerId): int
     {
         $npcDronesInRange = [];
 
@@ -309,17 +309,17 @@ class Drone
         $this->assignment = new Zone(-1, -1, -1, -1);
     }
 
-    public function getId() : int
+    public function getId(): int
     {
         return $this->id;
     }
 
-    public function getOwner() : int
+    public function getOwner(): int
     {
         return $this->owner;
     }
 
-    public function getX() : int
+    public function getX(): int
     {
         return $this->x;
     }
@@ -329,7 +329,7 @@ class Drone
         $this->x = $x;
     }
 
-    public function getY() : int
+    public function getY(): int
     {
         return $this->y;
     }
@@ -339,7 +339,7 @@ class Drone
         $this->y = $y;
     }
 
-    public function getAssignment() : Zone
+    public function getAssignment(): Zone
     {
         return $this->assignment;
     }
@@ -355,7 +355,7 @@ class Drone
      * @param Zone $zone
      * @return int
      */
-    public function calculateDistanceFromZone(Zone $zone) : int
+    public function calculateDistanceFromZone(Zone $zone): int
     {
         $distanceX = pow($this->x - $zone->getX(), 2);
         $distanceY = pow($this->y - $zone->getY(), 2);

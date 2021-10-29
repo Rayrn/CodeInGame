@@ -8,9 +8,10 @@
     <arg name="extensions" value="php"/>
 
     <!-- Directories to scan -->
-    <file>code-vs-zomies/</file>
-    <file>legends-of-code-magic/</file>
-    <file>standalone/</file>
+    <!-- <file>code-vs-zombies/</file> -->
+    <!-- <file>legends-of-code-magic/</file> -->
+    <file>spring-challenge-2021/</file>
+    <!-- <file>standalone/</file> -->
 
     <!-- PSR-2 Coding Style -->
     <rule ref="PSR2" />

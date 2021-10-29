@@ -1,4 +1,5 @@
 <?php
+
 // To debug (equivalent to var_dump): error_log(var_export($var, true));
 
 // Persist
@@ -7,10 +8,11 @@ $lastX = 0;
 $lastY = 0;
 $lastThrust = 0;
 
-while (TRUE)
-{
+while (true) {
     // Us
-    fscanf(STDIN, "%d %d %d %d %d %d",
+    fscanf(
+        STDIN,
+        "%d %d %d %d %d %d",
         $x,
         $y,
         $nextCheckpointX, // x position of the next check point
@@ -37,7 +39,8 @@ while (TRUE)
     $lastThrust = $thrust == 'BOOST' ? 100 : $thrust;
 }
 
-function getTarget($x, $y, $checkpoints, $distance, $lastThrust) {
+function getTarget($x, $y, $checkpoints, $distance, $lastThrust)
+{
     $resetDistance = (10 * $lastThrust) + 500;
 
     if ($distance < $resetDistance) {
@@ -54,18 +57,22 @@ function getTarget($x, $y, $checkpoints, $distance, $lastThrust) {
     return ['x' => $x, 'y' => $y];
 }
 
-function getThrust($angle, $distance) {
+function getThrust($angle, $distance)
+{
     $angle = intval($angle);
-    $angleMod = (100 - ($angle > 95 ? 95 : $angle)) / 100; 
+    $angleMod = (100 - ($angle > 95 ? 95 : $angle)) / 100;
  
     $thrust = intval((95 * $angleMod) + 5);
 
-    if ($thrust >= 100) $thrust = $distance > 3000 ? 'BOOST' : 100;
+    if ($thrust >= 100) {
+        $thrust = $distance > 3000 ? 'BOOST' : 100;
+    }
 
     return $thrust;
 }
 
-function saveCheckpoint($x, $y, $checkpoints) {
+function saveCheckpoint($x, $y, $checkpoints)
+{
     foreach ($checkpoints as $data) {
         if ($data['x'] == $x && $data['y'] == $y) {
             return $checkpoints;

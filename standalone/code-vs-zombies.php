@@ -14,7 +14,7 @@ while (true) {
     echo $target['x'], ' ', $target['y'], "\n";
 }
 
-function getAsh() : array
+function getAsh(): array
 {
     fscanf(STDIN, "%d %d", $x, $y);
 
@@ -24,7 +24,7 @@ function getAsh() : array
     ];
 }
 
-function getHumans() : array
+function getHumans(): array
 {
     $humans = [];
 
@@ -42,7 +42,7 @@ function getHumans() : array
     return $humans;
 }
 
-function getZombies() : array
+function getZombies(): array
 {
     $zombies = [];
 
@@ -62,7 +62,7 @@ function getZombies() : array
     return $zombies;
 }
 
-function ttDie(array $ash, array $zombies) : array
+function ttDie(array $ash, array $zombies): array
 {
     foreach ($zombies as $zombieId => $zombie) {
         $zombies[$zombieId]['distance'] = intval(getDistance($ash, $zombie) / 2000);
@@ -71,7 +71,7 @@ function ttDie(array $ash, array $zombies) : array
     return $zombies;
 }
 
-function ttLive(array $humans, array $zombies) : array
+function ttLive(array $humans, array $zombies): array
 {
     foreach ($humans as $humanId => $human) {
         $humans[$humanId]['distance']['zombie'] = intval(getDistance($human, getNearest($human, $zombies)) / 400);
@@ -80,7 +80,7 @@ function ttLive(array $humans, array $zombies) : array
     return $humans;
 }
 
-function ttSave(array $ash, array $humans) : array
+function ttSave(array $ash, array $humans): array
 {
     foreach ($humans as $humanId => $human) {
         $humans[$humanId]['distance']['ash'] = intval(getDistance($ash, $human) / 1000);
@@ -106,7 +106,7 @@ function getNearest(array $source, array $opponents)
     return $target;
 }
 
-function getDistance($entityA, $entityB) : int
+function getDistance($entityA, $entityB): int
 {
     $x = abs($entityA['x'] - $entityB['x']);
     $y = abs($entityA['y'] - $entityB['y']);
@@ -114,7 +114,7 @@ function getDistance($entityA, $entityB) : int
     return (int) sqrt(($x * $x) + ($y * $y));
 }
 
-function getTarget(array $zombies, array $humans) : array
+function getTarget(array $zombies, array $humans): array
 {
     if (count($zombies) == 1) {
         return array_pop($zombies);
