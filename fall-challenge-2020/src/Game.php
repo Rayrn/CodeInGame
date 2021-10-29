@@ -1,98 +1,72 @@
 <?php
 
-namespace CodeInGame\LegendsOfCodeMagic;
+namespace CodeInGame\FallChallenge2020;
 
-use CodeInGame\LegendsOfCodeMagic\Action\BattleAction;
-use CodeInGame\LegendsOfCodeMagic\Action\DraftAction;
-use CodeInGame\LegendsOfCodeMagic\Card\Card;
-use CodeInGame\LegendsOfCodeMagic\Card\CardCollection;
-use CodeInGame\LegendsOfCodeMagic\Card\CardFactory;
-use CodeInGame\LegendsOfCodeMagic\Card\CardReferenceCollection;
-use CodeInGame\LegendsOfCodeMagic\Player\Opponent;
-use CodeInGame\LegendsOfCodeMagic\Player\Player;
+use CodeInGame\FallChallenge2020\Entity\Cupboard;
+use CodeInGame\FallChallenge2020\Worker\Brewer;
+use CodeInGame\FallChallenge2020\Worker\Mage;
 
 class Game
 {
-    public const LOCATION_BOARD_PLAYER = 1;
-    public const LOCATION_HAND_PLAYER = 0;
-    public const LOCATION_BOARD_OPPONENT = -1;
+    /**
+     * @var gameState
+     */
+    private $gameState;
 
-    private $board;
-    private $cardCollection;
-    private $cardFactory;
-    private $player;
-    private $opponent;
+    /**
+     * @var Brewer
+     */
+    private $brewer;
 
-    public function __construct(Player $player, Opponent $opponent)
+    /**
+     * @var Mage
+     */
+    private $mage;
+
+    public function __construct(GameState $gameState, Brewer $brewer, Mage $mage)
     {
-        $this->player = $player;
-        $this->opponent = $opponent;
-
-        $this->board = new CardReferenceCollection();
-        $this->cardCollection = new CardCollection();
-        $this->cardFactory = new CardFactory();
+        $this->gameState = $gameState;
+        $this->hats['brewer'] = $brewer;
+        $this->hats['mage'] = $mage;
     }
 
-    public function getBoard(): CardReferenceCollection
+    public function getGameState(): GameState
     {
-        return $this->board;
+        return $this->gameState;
     }
 
-    public function getCardCollection(): CardCollection
+    public function process(): string
     {
-        return $this->cardCollection;
-    }
+        // Supplies!
+        $cupboard = $this->gameState->getPlayerCupboard();
 
-    public function getCardFactory(): CardFactory
-    {
-        return $this->cardFactory;
-    }
+        // Actions!
+        $orders = $this->gameState->getOrders();
+        $spells = $this->gameState->getPlayerSpells();
 
-    public function getPlayer(): Player
-    {
-        return $this->player;
-    }
+        // Start by seeing if there are any potions we can make
+        $brewable = $cupboard->listUseable($orders);
 
-    public function getOpponent(): Opponent
-    {
-        return $this->opponent;
-    }
-
-    public function updateState(array $cardData): void
-    {
-        foreach ($cardData as $data) {
-            [$card, $location] = $data;
-
-            $this->cardCollection->add($card, $location);
-            $this->board->add($card->getInstanceId());
-        }
-    }
-
-    public function applyOpponentsActions(): void
-    {
-        $actions = $this->opponent->getActions();
-
-        foreach ($actions as $action) {
-            $card = $this->cardCollection->find($action['cardNumber'], self::LOCATION_BOARD_OPPONENT);
-
-            // new Debug("{$card->getNumber()}, {$action['action']}");
+        // If we can make something, do!
+        if (count($brewable->list()) > 0) {
+            return $this->hats['brewer']->makeRecipe($brewable);
         }
 
-        $this->opponent->clearActions();
-    }
+        // Okay, we can't make anything. Can we cast anything?
+        $castable = $cupboard->listUseable($spells);
 
-    public function getPlayerActions(): string
-    {
-        $playerActions = in_array(-1, $this->board->list())
-            ? (new DraftAction($this->cardCollection))->getActions()
-            : (new BattleAction($this->cardCollection, $this->player, $this->opponent))->getActions();
+        // If we can't cast anything, rest!
+        if (count($castable->list()) == 0) {
+            return 'REST';
+        }
 
-        return implode(';', $playerActions) . "\n";
-    }
+        // Find the most valuable recipe to start working towards
+        $recipe = $this->hats['brewer']->getBestRecipe($cupboard, $orders);
 
-    public function cleanup(): void
-    {
-        $this->cardCollection->clear();
-        $this->board->clear();
+        // Find the most valuable spell for the recipe (probably FIREBALL)
+        $spell = $this->hats['mage']->getBestSpell($cupboard, $castable, $recipe);
+
+        // FIREBALL!!!!
+        return $this->hats['mage']->castSpell($spell);
     }
 }
